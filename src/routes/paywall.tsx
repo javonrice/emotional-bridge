@@ -149,6 +149,32 @@ function Paywall() {
       <AnimatePresence>
         {showSheet && <Objection onClose={() => setShowSheet(false)} onSkip={start} />}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={closeCheckout}
+              className="fixed inset-0 z-[60] bg-black/70"
+            />
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 360, damping: 36 }}
+              className="fixed inset-x-0 bottom-0 z-[70] max-h-[92vh] overflow-y-auto rounded-t-3xl bg-surface p-4 safe-bottom"
+            >
+              <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-white/15" />
+              <div className="flex items-center justify-between px-2 pb-2">
+                <h3 className="text-base font-semibold text-foreground">Complete your purchase</h3>
+                <button onClick={closeCheckout} aria-label="Close" className="tap-scale flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-muted-foreground">
+                  <X size={16} />
+                </button>
+              </div>
+              {checkoutElement}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
