@@ -129,21 +129,31 @@ function MonthlyCard({ title, hero, sub, small }: { title: string; hero: string;
   );
 }
 
-function LoopMap() {
-  // Hand-authored emotional flow graph.
-  const nodes = [
-    { id: "lonely", x: 60, y: 60, r: 24, label: "Lonely", hot: true },
-    { id: "stressed", x: 220, y: 50, r: 20, label: "Stressed" },
-    { id: "numb", x: 280, y: 160, r: 22, label: "Numb", hot: true },
-    { id: "scroll", x: 140, y: 180, r: 26, label: "Scroll", hot: true },
-    { id: "shame", x: 60, y: 280, r: 18, label: "Shame" },
-    { id: "reset", x: 240, y: 280, r: 18, label: "Reset" },
-  ];
-  const edges = [
-    ["lonely", "scroll"], ["stressed", "numb"], ["numb", "scroll"],
-    ["scroll", "shame"], ["scroll", "reset"], ["lonely", "numb"],
-  ] as const;
-  const pos = Object.fromEntries(nodes.map((n) => [n.id, n]));
+function LoopMap({
+  emotions,
+  edges,
+}: {
+  emotions: { label: string; count: number }[];
+  edges: { from: string; to: string; count: number }[];
+}) {
+  const top = emotions.slice(0, 7);
+  const cx = 170, cy = 170, R = 115;
+  const maxCount = Math.max(...top.map((e) => e.count), 1);
+  const hotThreshold = maxCount * 0.6;
+  const positioned = top.map((e, i) => {
+    const angle = (i / top.length) * Math.PI * 2 - Math.PI / 2;
+    return {
+      id: e.label,
+      x: cx + Math.cos(angle) * R,
+      y: cy + Math.sin(angle) * R,
+      r: 16 + Math.min(14, (e.count / maxCount) * 14),
+      label: e.label.charAt(0).toUpperCase() + e.label.slice(1),
+      hot: e.count >= hotThreshold,
+    };
+  });
+  const pos = Object.fromEntries(positioned.map((n) => [n.id, n]));
+  const maxEdge = Math.max(...edges.map((e) => e.count), 1);
+  const visibleEdges = edges.filter((e) => pos[e.from] && pos[e.to]);
 
   return (
     <svg viewBox="0 0 340 340" className="h-[340px] w-full">
@@ -157,20 +167,22 @@ function LoopMap() {
           <stop offset="100%" stopColor="#6C63FF" />
         </radialGradient>
       </defs>
-      {edges.map(([a, b], i) => {
-        const p1 = pos[a]; const p2 = pos[b];
+      {visibleEdges.map((edge, i) => {
+        const p1 = pos[edge.from]; const p2 = pos[edge.to];
         const mx = (p1.x + p2.x) / 2; const my = (p1.y + p2.y) / 2 - 18;
+        const weight = 0.8 + (edge.count / maxEdge) * 2.4;
+        const opacity = 0.25 + (edge.count / maxEdge) * 0.55;
         return (
           <path
             key={i}
             d={`M${p1.x},${p1.y} Q${mx},${my} ${p2.x},${p2.y}`}
-            stroke="rgba(108,99,255,0.45)"
-            strokeWidth={1.4}
+            stroke={`rgba(108,99,255,${opacity.toFixed(2)})`}
+            strokeWidth={weight}
             fill="none"
           />
         );
       })}
-      {nodes.map((n) => (
+      {positioned.map((n) => (
         <g key={n.id} filter={n.hot ? "url(#glow)" : undefined}>
           <circle cx={n.x} cy={n.y} r={n.r} fill={n.hot ? "url(#nodeHot)" : "#1E1E30"} stroke="rgba(108,99,255,0.6)" strokeWidth={1.2} />
           <text x={n.x} y={n.y + 4} textAnchor="middle" fontSize="11" fontWeight="600" fill="#F0F0F8">{n.label}</text>
