@@ -11,7 +11,22 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingWelcomeRouteImport } from './routes/onboarding.welcome'
+import { Route as OnboardingTimingRouteImport } from './routes/onboarding.timing'
+import { Route as OnboardingStoryRouteImport } from './routes/onboarding.story'
+import { Route as OnboardingScienceRouteImport } from './routes/onboarding.science'
+import { Route as OnboardingRevealMirrorRouteImport } from './routes/onboarding.reveal-mirror'
+import { Route as OnboardingRevealHoursRouteImport } from './routes/onboarding.reveal-hours'
+import { Route as OnboardingProofRouteImport } from './routes/onboarding.proof'
+import { Route as OnboardingPlanRouteImport } from './routes/onboarding.plan'
 import { Route as OnboardingOpenerRouteImport } from './routes/onboarding.opener'
+import { Route as OnboardingLoopRouteImport } from './routes/onboarding.loop'
+import { Route as OnboardingFeelingRouteImport } from './routes/onboarding.feeling'
+import { Route as OnboardingDurationRouteImport } from './routes/onboarding.duration'
+import { Route as OnboardingControlRouteImport } from './routes/onboarding.control'
+import { Route as OnboardingCommitRouteImport } from './routes/onboarding.commit'
+import { Route as OnboardingAppsRouteImport } from './routes/onboarding.apps'
+import { Route as OnboardingAnalyzingRouteImport } from './routes/onboarding.analyzing'
+import { Route as OnboardingAgeRouteImport } from './routes/onboarding.age'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -23,39 +38,229 @@ const OnboardingWelcomeRoute = OnboardingWelcomeRouteImport.update({
   path: '/onboarding/welcome',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OnboardingTimingRoute = OnboardingTimingRouteImport.update({
+  id: '/onboarding/timing',
+  path: '/onboarding/timing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingStoryRoute = OnboardingStoryRouteImport.update({
+  id: '/onboarding/story',
+  path: '/onboarding/story',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingScienceRoute = OnboardingScienceRouteImport.update({
+  id: '/onboarding/science',
+  path: '/onboarding/science',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRevealMirrorRoute = OnboardingRevealMirrorRouteImport.update({
+  id: '/onboarding/reveal-mirror',
+  path: '/onboarding/reveal-mirror',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRevealHoursRoute = OnboardingRevealHoursRouteImport.update({
+  id: '/onboarding/reveal-hours',
+  path: '/onboarding/reveal-hours',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingProofRoute = OnboardingProofRouteImport.update({
+  id: '/onboarding/proof',
+  path: '/onboarding/proof',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingPlanRoute = OnboardingPlanRouteImport.update({
+  id: '/onboarding/plan',
+  path: '/onboarding/plan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingOpenerRoute = OnboardingOpenerRouteImport.update({
   id: '/onboarding/opener',
   path: '/onboarding/opener',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OnboardingLoopRoute = OnboardingLoopRouteImport.update({
+  id: '/onboarding/loop',
+  path: '/onboarding/loop',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingFeelingRoute = OnboardingFeelingRouteImport.update({
+  id: '/onboarding/feeling',
+  path: '/onboarding/feeling',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingDurationRoute = OnboardingDurationRouteImport.update({
+  id: '/onboarding/duration',
+  path: '/onboarding/duration',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingControlRoute = OnboardingControlRouteImport.update({
+  id: '/onboarding/control',
+  path: '/onboarding/control',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingCommitRoute = OnboardingCommitRouteImport.update({
+  id: '/onboarding/commit',
+  path: '/onboarding/commit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingAppsRoute = OnboardingAppsRouteImport.update({
+  id: '/onboarding/apps',
+  path: '/onboarding/apps',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingAnalyzingRoute = OnboardingAnalyzingRouteImport.update({
+  id: '/onboarding/analyzing',
+  path: '/onboarding/analyzing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingAgeRoute = OnboardingAgeRouteImport.update({
+  id: '/onboarding/age',
+  path: '/onboarding/age',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/onboarding/age': typeof OnboardingAgeRoute
+  '/onboarding/analyzing': typeof OnboardingAnalyzingRoute
+  '/onboarding/apps': typeof OnboardingAppsRoute
+  '/onboarding/commit': typeof OnboardingCommitRoute
+  '/onboarding/control': typeof OnboardingControlRoute
+  '/onboarding/duration': typeof OnboardingDurationRoute
+  '/onboarding/feeling': typeof OnboardingFeelingRoute
+  '/onboarding/loop': typeof OnboardingLoopRoute
   '/onboarding/opener': typeof OnboardingOpenerRoute
+  '/onboarding/plan': typeof OnboardingPlanRoute
+  '/onboarding/proof': typeof OnboardingProofRoute
+  '/onboarding/reveal-hours': typeof OnboardingRevealHoursRoute
+  '/onboarding/reveal-mirror': typeof OnboardingRevealMirrorRoute
+  '/onboarding/science': typeof OnboardingScienceRoute
+  '/onboarding/story': typeof OnboardingStoryRoute
+  '/onboarding/timing': typeof OnboardingTimingRoute
   '/onboarding/welcome': typeof OnboardingWelcomeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/onboarding/age': typeof OnboardingAgeRoute
+  '/onboarding/analyzing': typeof OnboardingAnalyzingRoute
+  '/onboarding/apps': typeof OnboardingAppsRoute
+  '/onboarding/commit': typeof OnboardingCommitRoute
+  '/onboarding/control': typeof OnboardingControlRoute
+  '/onboarding/duration': typeof OnboardingDurationRoute
+  '/onboarding/feeling': typeof OnboardingFeelingRoute
+  '/onboarding/loop': typeof OnboardingLoopRoute
   '/onboarding/opener': typeof OnboardingOpenerRoute
+  '/onboarding/plan': typeof OnboardingPlanRoute
+  '/onboarding/proof': typeof OnboardingProofRoute
+  '/onboarding/reveal-hours': typeof OnboardingRevealHoursRoute
+  '/onboarding/reveal-mirror': typeof OnboardingRevealMirrorRoute
+  '/onboarding/science': typeof OnboardingScienceRoute
+  '/onboarding/story': typeof OnboardingStoryRoute
+  '/onboarding/timing': typeof OnboardingTimingRoute
   '/onboarding/welcome': typeof OnboardingWelcomeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/onboarding/age': typeof OnboardingAgeRoute
+  '/onboarding/analyzing': typeof OnboardingAnalyzingRoute
+  '/onboarding/apps': typeof OnboardingAppsRoute
+  '/onboarding/commit': typeof OnboardingCommitRoute
+  '/onboarding/control': typeof OnboardingControlRoute
+  '/onboarding/duration': typeof OnboardingDurationRoute
+  '/onboarding/feeling': typeof OnboardingFeelingRoute
+  '/onboarding/loop': typeof OnboardingLoopRoute
   '/onboarding/opener': typeof OnboardingOpenerRoute
+  '/onboarding/plan': typeof OnboardingPlanRoute
+  '/onboarding/proof': typeof OnboardingProofRoute
+  '/onboarding/reveal-hours': typeof OnboardingRevealHoursRoute
+  '/onboarding/reveal-mirror': typeof OnboardingRevealMirrorRoute
+  '/onboarding/science': typeof OnboardingScienceRoute
+  '/onboarding/story': typeof OnboardingStoryRoute
+  '/onboarding/timing': typeof OnboardingTimingRoute
   '/onboarding/welcome': typeof OnboardingWelcomeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/onboarding/opener' | '/onboarding/welcome'
+  fullPaths:
+    | '/'
+    | '/onboarding/age'
+    | '/onboarding/analyzing'
+    | '/onboarding/apps'
+    | '/onboarding/commit'
+    | '/onboarding/control'
+    | '/onboarding/duration'
+    | '/onboarding/feeling'
+    | '/onboarding/loop'
+    | '/onboarding/opener'
+    | '/onboarding/plan'
+    | '/onboarding/proof'
+    | '/onboarding/reveal-hours'
+    | '/onboarding/reveal-mirror'
+    | '/onboarding/science'
+    | '/onboarding/story'
+    | '/onboarding/timing'
+    | '/onboarding/welcome'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/onboarding/opener' | '/onboarding/welcome'
-  id: '__root__' | '/' | '/onboarding/opener' | '/onboarding/welcome'
+  to:
+    | '/'
+    | '/onboarding/age'
+    | '/onboarding/analyzing'
+    | '/onboarding/apps'
+    | '/onboarding/commit'
+    | '/onboarding/control'
+    | '/onboarding/duration'
+    | '/onboarding/feeling'
+    | '/onboarding/loop'
+    | '/onboarding/opener'
+    | '/onboarding/plan'
+    | '/onboarding/proof'
+    | '/onboarding/reveal-hours'
+    | '/onboarding/reveal-mirror'
+    | '/onboarding/science'
+    | '/onboarding/story'
+    | '/onboarding/timing'
+    | '/onboarding/welcome'
+  id:
+    | '__root__'
+    | '/'
+    | '/onboarding/age'
+    | '/onboarding/analyzing'
+    | '/onboarding/apps'
+    | '/onboarding/commit'
+    | '/onboarding/control'
+    | '/onboarding/duration'
+    | '/onboarding/feeling'
+    | '/onboarding/loop'
+    | '/onboarding/opener'
+    | '/onboarding/plan'
+    | '/onboarding/proof'
+    | '/onboarding/reveal-hours'
+    | '/onboarding/reveal-mirror'
+    | '/onboarding/science'
+    | '/onboarding/story'
+    | '/onboarding/timing'
+    | '/onboarding/welcome'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  OnboardingAgeRoute: typeof OnboardingAgeRoute
+  OnboardingAnalyzingRoute: typeof OnboardingAnalyzingRoute
+  OnboardingAppsRoute: typeof OnboardingAppsRoute
+  OnboardingCommitRoute: typeof OnboardingCommitRoute
+  OnboardingControlRoute: typeof OnboardingControlRoute
+  OnboardingDurationRoute: typeof OnboardingDurationRoute
+  OnboardingFeelingRoute: typeof OnboardingFeelingRoute
+  OnboardingLoopRoute: typeof OnboardingLoopRoute
   OnboardingOpenerRoute: typeof OnboardingOpenerRoute
+  OnboardingPlanRoute: typeof OnboardingPlanRoute
+  OnboardingProofRoute: typeof OnboardingProofRoute
+  OnboardingRevealHoursRoute: typeof OnboardingRevealHoursRoute
+  OnboardingRevealMirrorRoute: typeof OnboardingRevealMirrorRoute
+  OnboardingScienceRoute: typeof OnboardingScienceRoute
+  OnboardingStoryRoute: typeof OnboardingStoryRoute
+  OnboardingTimingRoute: typeof OnboardingTimingRoute
   OnboardingWelcomeRoute: typeof OnboardingWelcomeRoute
 }
 
@@ -75,6 +280,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingWelcomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/onboarding/timing': {
+      id: '/onboarding/timing'
+      path: '/onboarding/timing'
+      fullPath: '/onboarding/timing'
+      preLoaderRoute: typeof OnboardingTimingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/story': {
+      id: '/onboarding/story'
+      path: '/onboarding/story'
+      fullPath: '/onboarding/story'
+      preLoaderRoute: typeof OnboardingStoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/science': {
+      id: '/onboarding/science'
+      path: '/onboarding/science'
+      fullPath: '/onboarding/science'
+      preLoaderRoute: typeof OnboardingScienceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/reveal-mirror': {
+      id: '/onboarding/reveal-mirror'
+      path: '/onboarding/reveal-mirror'
+      fullPath: '/onboarding/reveal-mirror'
+      preLoaderRoute: typeof OnboardingRevealMirrorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/reveal-hours': {
+      id: '/onboarding/reveal-hours'
+      path: '/onboarding/reveal-hours'
+      fullPath: '/onboarding/reveal-hours'
+      preLoaderRoute: typeof OnboardingRevealHoursRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/proof': {
+      id: '/onboarding/proof'
+      path: '/onboarding/proof'
+      fullPath: '/onboarding/proof'
+      preLoaderRoute: typeof OnboardingProofRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/plan': {
+      id: '/onboarding/plan'
+      path: '/onboarding/plan'
+      fullPath: '/onboarding/plan'
+      preLoaderRoute: typeof OnboardingPlanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding/opener': {
       id: '/onboarding/opener'
       path: '/onboarding/opener'
@@ -82,12 +336,83 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingOpenerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/onboarding/loop': {
+      id: '/onboarding/loop'
+      path: '/onboarding/loop'
+      fullPath: '/onboarding/loop'
+      preLoaderRoute: typeof OnboardingLoopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/feeling': {
+      id: '/onboarding/feeling'
+      path: '/onboarding/feeling'
+      fullPath: '/onboarding/feeling'
+      preLoaderRoute: typeof OnboardingFeelingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/duration': {
+      id: '/onboarding/duration'
+      path: '/onboarding/duration'
+      fullPath: '/onboarding/duration'
+      preLoaderRoute: typeof OnboardingDurationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/control': {
+      id: '/onboarding/control'
+      path: '/onboarding/control'
+      fullPath: '/onboarding/control'
+      preLoaderRoute: typeof OnboardingControlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/commit': {
+      id: '/onboarding/commit'
+      path: '/onboarding/commit'
+      fullPath: '/onboarding/commit'
+      preLoaderRoute: typeof OnboardingCommitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/apps': {
+      id: '/onboarding/apps'
+      path: '/onboarding/apps'
+      fullPath: '/onboarding/apps'
+      preLoaderRoute: typeof OnboardingAppsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/analyzing': {
+      id: '/onboarding/analyzing'
+      path: '/onboarding/analyzing'
+      fullPath: '/onboarding/analyzing'
+      preLoaderRoute: typeof OnboardingAnalyzingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/age': {
+      id: '/onboarding/age'
+      path: '/onboarding/age'
+      fullPath: '/onboarding/age'
+      preLoaderRoute: typeof OnboardingAgeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  OnboardingAgeRoute: OnboardingAgeRoute,
+  OnboardingAnalyzingRoute: OnboardingAnalyzingRoute,
+  OnboardingAppsRoute: OnboardingAppsRoute,
+  OnboardingCommitRoute: OnboardingCommitRoute,
+  OnboardingControlRoute: OnboardingControlRoute,
+  OnboardingDurationRoute: OnboardingDurationRoute,
+  OnboardingFeelingRoute: OnboardingFeelingRoute,
+  OnboardingLoopRoute: OnboardingLoopRoute,
   OnboardingOpenerRoute: OnboardingOpenerRoute,
+  OnboardingPlanRoute: OnboardingPlanRoute,
+  OnboardingProofRoute: OnboardingProofRoute,
+  OnboardingRevealHoursRoute: OnboardingRevealHoursRoute,
+  OnboardingRevealMirrorRoute: OnboardingRevealMirrorRoute,
+  OnboardingScienceRoute: OnboardingScienceRoute,
+  OnboardingStoryRoute: OnboardingStoryRoute,
+  OnboardingTimingRoute: OnboardingTimingRoute,
   OnboardingWelcomeRoute: OnboardingWelcomeRoute,
 }
 export const routeTree = rootRouteImport
