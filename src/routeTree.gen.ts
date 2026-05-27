@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PaywallRouteImport } from './routes/paywall'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as CrisisRouteImport } from './routes/crisis'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingWelcomeRouteImport } from './routes/onboarding.welcome'
@@ -31,6 +32,9 @@ import { Route as OnboardingCommitRouteImport } from './routes/onboarding.commit
 import { Route as OnboardingAppsRouteImport } from './routes/onboarding.apps'
 import { Route as OnboardingAnalyzingRouteImport } from './routes/onboarding.analyzing'
 import { Route as OnboardingAgeRouteImport } from './routes/onboarding.age'
+import { Route as LegalTermsRouteImport } from './routes/legal.terms'
+import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
+import { Route as LegalEulaRouteImport } from './routes/legal.eula'
 import { Route as AppTodayRouteImport } from './routes/app.today'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppInsightsRouteImport } from './routes/app.insights'
@@ -46,6 +50,11 @@ const PaywallRoute = PaywallRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CrisisRoute = CrisisRouteImport.update({
+  id: '/crisis',
+  path: '/crisis',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -148,6 +157,21 @@ const OnboardingAgeRoute = OnboardingAgeRouteImport.update({
   path: '/onboarding/age',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LegalTermsRoute = LegalTermsRouteImport.update({
+  id: '/legal/terms',
+  path: '/legal/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalPrivacyRoute = LegalPrivacyRouteImport.update({
+  id: '/legal/privacy',
+  path: '/legal/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalEulaRoute = LegalEulaRouteImport.update({
+  id: '/legal/eula',
+  path: '/legal/eula',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppTodayRoute = AppTodayRouteImport.update({
   id: '/today',
   path: '/today',
@@ -182,6 +206,7 @@ const AdminAiQualityRoute = AdminAiQualityRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/crisis': typeof CrisisRoute
   '/login': typeof LoginRoute
   '/paywall': typeof PaywallRoute
   '/admin/ai-quality': typeof AdminAiQualityRoute
@@ -190,6 +215,9 @@ export interface FileRoutesByFullPath {
   '/app/insights': typeof AppInsightsRoute
   '/app/profile': typeof AppProfileRoute
   '/app/today': typeof AppTodayRoute
+  '/legal/eula': typeof LegalEulaRoute
+  '/legal/privacy': typeof LegalPrivacyRoute
+  '/legal/terms': typeof LegalTermsRoute
   '/onboarding/age': typeof OnboardingAgeRoute
   '/onboarding/analyzing': typeof OnboardingAnalyzingRoute
   '/onboarding/apps': typeof OnboardingAppsRoute
@@ -212,6 +240,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/crisis': typeof CrisisRoute
   '/login': typeof LoginRoute
   '/paywall': typeof PaywallRoute
   '/admin/ai-quality': typeof AdminAiQualityRoute
@@ -220,6 +249,9 @@ export interface FileRoutesByTo {
   '/app/insights': typeof AppInsightsRoute
   '/app/profile': typeof AppProfileRoute
   '/app/today': typeof AppTodayRoute
+  '/legal/eula': typeof LegalEulaRoute
+  '/legal/privacy': typeof LegalPrivacyRoute
+  '/legal/terms': typeof LegalTermsRoute
   '/onboarding/age': typeof OnboardingAgeRoute
   '/onboarding/analyzing': typeof OnboardingAnalyzingRoute
   '/onboarding/apps': typeof OnboardingAppsRoute
@@ -243,6 +275,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/crisis': typeof CrisisRoute
   '/login': typeof LoginRoute
   '/paywall': typeof PaywallRoute
   '/admin/ai-quality': typeof AdminAiQualityRoute
@@ -251,6 +284,9 @@ export interface FileRoutesById {
   '/app/insights': typeof AppInsightsRoute
   '/app/profile': typeof AppProfileRoute
   '/app/today': typeof AppTodayRoute
+  '/legal/eula': typeof LegalEulaRoute
+  '/legal/privacy': typeof LegalPrivacyRoute
+  '/legal/terms': typeof LegalTermsRoute
   '/onboarding/age': typeof OnboardingAgeRoute
   '/onboarding/analyzing': typeof OnboardingAnalyzingRoute
   '/onboarding/apps': typeof OnboardingAppsRoute
@@ -275,6 +311,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
+    | '/crisis'
     | '/login'
     | '/paywall'
     | '/admin/ai-quality'
@@ -283,6 +320,9 @@ export interface FileRouteTypes {
     | '/app/insights'
     | '/app/profile'
     | '/app/today'
+    | '/legal/eula'
+    | '/legal/privacy'
+    | '/legal/terms'
     | '/onboarding/age'
     | '/onboarding/analyzing'
     | '/onboarding/apps'
@@ -305,6 +345,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/app'
+    | '/crisis'
     | '/login'
     | '/paywall'
     | '/admin/ai-quality'
@@ -313,6 +354,9 @@ export interface FileRouteTypes {
     | '/app/insights'
     | '/app/profile'
     | '/app/today'
+    | '/legal/eula'
+    | '/legal/privacy'
+    | '/legal/terms'
     | '/onboarding/age'
     | '/onboarding/analyzing'
     | '/onboarding/apps'
@@ -335,6 +379,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/app'
+    | '/crisis'
     | '/login'
     | '/paywall'
     | '/admin/ai-quality'
@@ -343,6 +388,9 @@ export interface FileRouteTypes {
     | '/app/insights'
     | '/app/profile'
     | '/app/today'
+    | '/legal/eula'
+    | '/legal/privacy'
+    | '/legal/terms'
     | '/onboarding/age'
     | '/onboarding/analyzing'
     | '/onboarding/apps'
@@ -366,9 +414,13 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  CrisisRoute: typeof CrisisRoute
   LoginRoute: typeof LoginRoute
   PaywallRoute: typeof PaywallRoute
   AdminAiQualityRoute: typeof AdminAiQualityRoute
+  LegalEulaRoute: typeof LegalEulaRoute
+  LegalPrivacyRoute: typeof LegalPrivacyRoute
+  LegalTermsRoute: typeof LegalTermsRoute
   OnboardingAgeRoute: typeof OnboardingAgeRoute
   OnboardingAnalyzingRoute: typeof OnboardingAnalyzingRoute
   OnboardingAppsRoute: typeof OnboardingAppsRoute
@@ -403,6 +455,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/crisis': {
+      id: '/crisis'
+      path: '/crisis'
+      fullPath: '/crisis'
+      preLoaderRoute: typeof CrisisRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -545,6 +604,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingAgeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/legal/terms': {
+      id: '/legal/terms'
+      path: '/legal/terms'
+      fullPath: '/legal/terms'
+      preLoaderRoute: typeof LegalTermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/privacy': {
+      id: '/legal/privacy'
+      path: '/legal/privacy'
+      fullPath: '/legal/privacy'
+      preLoaderRoute: typeof LegalPrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/eula': {
+      id: '/legal/eula'
+      path: '/legal/eula'
+      fullPath: '/legal/eula'
+      preLoaderRoute: typeof LegalEulaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/today': {
       id: '/app/today'
       path: '/today'
@@ -611,9 +691,13 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  CrisisRoute: CrisisRoute,
   LoginRoute: LoginRoute,
   PaywallRoute: PaywallRoute,
   AdminAiQualityRoute: AdminAiQualityRoute,
+  LegalEulaRoute: LegalEulaRoute,
+  LegalPrivacyRoute: LegalPrivacyRoute,
+  LegalTermsRoute: LegalTermsRoute,
   OnboardingAgeRoute: OnboardingAgeRoute,
   OnboardingAnalyzingRoute: OnboardingAnalyzingRoute,
   OnboardingAppsRoute: OnboardingAppsRoute,

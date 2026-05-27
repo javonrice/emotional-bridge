@@ -55,9 +55,11 @@ export const deleteAccount = createServerFn({ method: "POST" })
     ] as const;
     for (const t of tables) {
       // profiles uses `id` instead of `user_id`
-      const col = t === "profiles" ? "id" : "user_id";
-      await supabaseAdmin.from(t).delete().eq(col, userId);
+      const col: string = t === "profiles" ? "id" : "user_id";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabaseAdmin.from(t) as any).delete().eq(col, userId);
     }
+
 
     await supabaseAdmin.from("account_deletions").insert({ user_id: userId, email, reason: "user_request" });
 
