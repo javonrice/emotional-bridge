@@ -14,7 +14,9 @@ import {
   FileText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { deriveLoopName, resetOnboarding, useOnboarding, useStreak } from "@/lib/onboarding-store";
+import { deriveLoopName, resetOnboarding, useOnboarding } from "@/lib/onboarding-store";
+import { useQuery } from "@tanstack/react-query";
+import { getCheckinStats } from "@/lib/checkins.functions";
 import { IosWaitlistSheet } from "@/components/ios/ComingSoonBadge";
 import { exportUserData, deleteAccount } from "@/lib/account.functions";
 import { createPortalSession } from "@/lib/payments.functions";
@@ -27,7 +29,6 @@ export const Route = createFileRoute("/app/profile")({
 
 function Profile() {
   const { answers } = useOnboarding();
-  const { streak } = useStreak();
   const nav = useNavigate();
   const loopName = deriveLoopName(answers);
   const [waitlist, setWaitlist] = useState(false);
@@ -39,6 +40,15 @@ function Profile() {
   const deleteFn = useServerFn(deleteAccount);
   const portalFn = useServerFn(createPortalSession);
   const { isActive, subscription } = useSubscription();
+  const statsFn = useServerFn(getCheckinStats);
+  const tzOffset = typeof window !== "undefined" ? new Date().getTimezoneOffset() : 0;
+  const { data: stats } = useQuery({
+    queryKey: ["checkin-stats", tzOffset],
+    queryFn: () => statsFn({ data: { tz_offset_minutes: tzOffset } }),
+  });
+  const streak = stats?.streak ?? 0;
+  const totalCheckins = stats?.total ?? 0;
+  const totalDebriefs = stats?.totalDebriefs ?? 0;
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -122,8 +132,8 @@ function Profile() {
 
       <div className="mt-3 grid grid-cols-3 gap-3">
         <Stat n={streak} label="Streak" />
-        <Stat n={47} label="Check-ins" />
-        <Stat n={12} label="Debriefs" />
+        <Stat n={totalCheckins} label="Check-ins" />
+        <Stat n={totalDebriefs} label="Debriefs" />
       </div>
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-white/8 bg-card">
