@@ -3,7 +3,9 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Mic, Share2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { generateDebrief } from "@/lib/ai.functions";
+import { getDebriefHistory } from "@/lib/checkins.functions";
 import { AIFeedback } from "@/components/loop/AIFeedback";
 
 export const Route = createFileRoute("/app/debrief")({
