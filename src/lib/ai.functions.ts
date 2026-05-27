@@ -142,7 +142,7 @@ export const recordAIFeedback = createServerFn({ method: "POST" })
     // Fetch the source row to snapshot model + prompt_version + answers
     let model: string | null = null;
     let prompt_version: string | null = null;
-    let answers_snapshot: unknown = null;
+    let answers_snapshot: any = null;
 
     if (data.surface === "loop_card") {
       const { data: row } = await supabase.from("loops").select("model, prompt_version, answers_snapshot").eq("id", data.source_id).maybeSingle();
