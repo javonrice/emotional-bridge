@@ -21,6 +21,16 @@ function resolveIds(subscription: any) {
   return { priceId, productId, periodStart, periodEnd };
 }
 
+async function emitSubscriptionActivated(subscription: any, priceId: string | undefined) {
+  const userId = subscription.metadata?.userId;
+  if (!userId || subscription.status !== "active") return;
+  await getSupabase().from("events").insert({
+    name: "subscription.activated",
+    user_id: userId,
+    props: { stripe_customer_id: subscription.customer, plan: priceId ?? null } as never,
+  });
+}
+
 async function handleSubscriptionCreated(subscription: any, env: StripeEnv) {
   const userId = subscription.metadata?.userId;
   if (!userId) {
@@ -48,6 +58,7 @@ async function handleSubscriptionCreated(subscription: any, env: StripeEnv) {
       },
       { onConflict: "stripe_subscription_id" },
     );
+  await emitSubscriptionActivated(subscription, priceId);
 }
 
 async function handleSubscriptionUpdated(subscription: any, env: StripeEnv) {
