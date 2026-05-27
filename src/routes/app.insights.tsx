@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { ComingSoonBadge } from "@/components/ios/ComingSoonBadge";
 
 export const Route = createFileRoute("/app/insights")({
   component: Insights,
