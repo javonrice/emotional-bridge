@@ -22,6 +22,12 @@ const APPS = [
 
 function Insights() {
   const [tab, setTab] = useState<Tab>("gateway");
+  const statsFn = useServerFn(getCheckinStats);
+  const tzOffset = typeof window !== "undefined" ? new Date().getTimezoneOffset() : 0;
+  const { data: stats } = useQuery({
+    queryKey: ["checkin-stats", tzOffset],
+    queryFn: () => statsFn({ data: { tz_offset_minutes: tzOffset } }),
+  });
 
   return (
     <div className="safe-top px-6 pb-4">
