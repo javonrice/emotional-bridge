@@ -1,7 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import loopIcon from "@/assets/loop-icon.png";
+import { useAuth } from "@/hooks/use-auth";
+import { useOnboarding } from "@/lib/onboarding-store";
+import { generateLoop } from "@/lib/ai.functions";
 
 export const Route = createFileRoute("/onboarding/analyzing")({
   component: Analyzing,
@@ -17,12 +21,38 @@ const LINES = [
 function Analyzing() {
   const nav = useNavigate();
   const [i, setI] = useState(0);
+  const { isAuthenticated, loading } = useAuth();
+  const { answers } = useOnboarding();
+  const runLoop = useServerFn(generateLoop);
+  const fired = useRef(false);
 
   useEffect(() => {
     const t = setInterval(() => setI((v) => (v + 1) % LINES.length), 900);
-    const done = setTimeout(() => nav({ to: "/onboarding/loop" }), 3800);
-    return () => { clearInterval(t); clearTimeout(done); };
-  }, [nav]);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    if (loading || fired.current) return;
+    fired.current = true;
+    const start = Date.now();
+    const finish = () => {
+      const wait = Math.max(0, 3800 - (Date.now() - start));
+      setTimeout(() => nav({ to: "/onboarding/loop" }), wait);
+    };
+    if (isAuthenticated) {
+      runLoop({ data: {
+        age: answers.age,
+        duration: answers.duration,
+        control: answers.control,
+        apps: answers.apps,
+        timing: answers.timing,
+        feeling: answers.feeling,
+        story: answers.story,
+      } }).finally(finish);
+    } else {
+      finish();
+    }
+  }, [loading]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gradient-hero px-6 text-center safe-top safe-bottom">
