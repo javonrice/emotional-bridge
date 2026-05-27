@@ -1,12 +1,16 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Check, Lock, Sparkles, X } from "lucide-react";
 import { completeOnboarding, deriveLoopName, useOnboarding } from "@/lib/onboarding-store";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { useAuth } from "@/hooks/use-auth";
+import { track } from "@/lib/analytics.functions";
 
 export const Route = createFileRoute("/paywall")({
+  validateSearch: (search: Record<string, unknown>): { source?: string } => ({
+    source: typeof search.source === "string" ? search.source : undefined,
+  }),
   component: Paywall,
 });
 
@@ -21,15 +25,27 @@ const PLANS: Record<Plan, { label: string; price: string; per: string; tag?: str
 function Paywall() {
   const nav = useNavigate();
   const { answers } = useOnboarding();
+  const { source } = Route.useSearch();
   const { user } = useAuth();
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
-  const [plan, setPlan] = useState<Plan>("annual");
+  const [plan, setPlanState] = useState<Plan>("annual");
   const [showSheet, setShowSheet] = useState(false);
   const loopName = deriveLoopName(answers);
+
+  useEffect(() => {
+    void track("paywall.view", { source: source ?? "unknown", loopName });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const setPlan = (p: Plan) => {
+    setPlanState(p);
+    void track("paywall.plan_select", { plan: p });
+  };
 
   const start = () => {
     completeOnboarding();
     const p = PLANS[plan];
+    void track("paywall.checkout_start", { plan, source: source ?? "unknown" });
     openCheckout({
       priceId: p.priceId,
       customerEmail: user?.email,

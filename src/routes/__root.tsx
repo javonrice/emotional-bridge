@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { ConsentBanner } from "@/components/legal/ConsentBanner";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 
 import appCss from "../styles.css?url";
 
@@ -103,6 +104,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="mx-auto min-h-dvh w-full max-w-[430px] bg-background">
+        <PaymentTestModeBanner />
         <main id="main">
           <Outlet />
         </main>

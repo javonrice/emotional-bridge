@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Mic, Share2 } from "lucide-react";
+import { Mic, Share2, Lock } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { generateDebrief } from "@/lib/ai.functions";
@@ -17,7 +17,7 @@ export const Route = createFileRoute("/app/debrief")({
 });
 
 
-type Stage = "input" | "thinking" | "card";
+type Stage = "input" | "thinking" | "card" | "paywall";
 type DebriefRow = {
   id: string;
   pattern: string | null;
@@ -71,6 +71,11 @@ function Debrief() {
     void track("debrief.submit", { length: text.length, risk });
     try {
       const res = await submit({ data: { text } });
+      if ((res as { upgradeRequired?: boolean }).upgradeRequired) {
+        void track("paywall.gate_hit", { source: "debrief_limit" });
+        setStage("paywall");
+        return;
+      }
       if (res.error || !res.debrief) {
         setError(res.error ?? "Something went wrong.");
         setStage("input");
@@ -178,6 +183,33 @@ function Debrief() {
             <button onClick={() => { setStage("input"); setText(""); setDebrief(null); }} className="mt-4 block w-full text-center text-xs text-muted-foreground">
               New debrief
             </button>
+          </motion.div>
+        )}
+
+        {stage === "paywall" && (
+          <motion.div key="p" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
+            <div className="relative overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-[#0A0A0F] to-[#1A1540] p-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+                <Lock size={20} />
+              </div>
+              <h2 className="mt-4 text-xl font-bold text-foreground">You've used your 3 free debriefs</h2>
+              <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
+                Unlock unlimited debriefs, your full Loop Map, and monthly pattern reports.
+              </p>
+              <Link
+                to="/paywall"
+                search={{ source: "debrief_limit" }}
+                className="ios-pill tap-scale mt-5 flex h-13 w-full items-center justify-center bg-primary py-3 text-base font-semibold text-primary-foreground glow"
+              >
+                Unlock LOOP · $14.99/mo
+              </Link>
+              <button
+                onClick={() => setStage("input")}
+                className="mt-3 block w-full text-center text-xs text-muted-foreground"
+              >
+                Maybe later
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

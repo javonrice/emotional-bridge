@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Check } from "lucide-react";
+import { track } from "@/lib/analytics.functions";
 
 export const Route = createFileRoute("/checkout/return")({
   validateSearch: (search: Record<string, unknown>): { session_id?: string } => ({
@@ -10,6 +12,9 @@ export const Route = createFileRoute("/checkout/return")({
 
 function CheckoutReturn() {
   const { session_id } = Route.useSearch();
+  useEffect(() => {
+    if (session_id) void track("paywall.checkout_complete", { session_id });
+  }, [session_id]);
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gradient-hero px-6 text-center safe-top">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success/15 text-success glow">

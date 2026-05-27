@@ -1,10 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getCheckinStats } from "@/lib/checkins.functions";
 import { ComingSoonBadge } from "@/components/ios/ComingSoonBadge";
+import { useEntitlements } from "@/hooks/useEntitlements";
 
 export const Route = createFileRoute("/app/insights")({
   component: Insights,
@@ -22,6 +23,7 @@ const APPS = [
 
 function Insights() {
   const [tab, setTab] = useState<Tab>("gateway");
+  const { tier } = useEntitlements();
   const statsFn = useServerFn(getCheckinStats);
   const tzOffset = typeof window !== "undefined" ? new Date().getTimezoneOffset() : 0;
   const { data: stats } = useQuery({
@@ -88,6 +90,15 @@ function Insights() {
                     <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-primary">
                       Early sketch · gets sharper after 14 check-ins
                     </div>
+                  )}
+                  {tier === "free" && (
+                    <Link
+                      to="/paywall"
+                      search={{ source: "insights" }}
+                      className="mb-3 ml-2 inline-block text-xs font-medium text-primary"
+                    >
+                      Full map unlocks with membership →
+                    </Link>
                   )}
                   <LoopMap emotions={stats.emotions} edges={stats.edges} />
                 </>
