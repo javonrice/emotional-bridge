@@ -14,16 +14,296 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ai_feedback: {
+        Row: {
+          answers_snapshot: Json | null
+          comment: string | null
+          created_at: string
+          id: string
+          model: string | null
+          prompt_version: string | null
+          rating: Database["public"]["Enums"]["ai_rating"]
+          reason: Database["public"]["Enums"]["ai_feedback_reason"] | null
+          source_id: string
+          surface: Database["public"]["Enums"]["ai_surface"]
+          user_id: string
+        }
+        Insert: {
+          answers_snapshot?: Json | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          model?: string | null
+          prompt_version?: string | null
+          rating: Database["public"]["Enums"]["ai_rating"]
+          reason?: Database["public"]["Enums"]["ai_feedback_reason"] | null
+          source_id: string
+          surface: Database["public"]["Enums"]["ai_surface"]
+          user_id: string
+        }
+        Update: {
+          answers_snapshot?: Json | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          model?: string | null
+          prompt_version?: string | null
+          rating?: Database["public"]["Enums"]["ai_rating"]
+          reason?: Database["public"]["Enums"]["ai_feedback_reason"] | null
+          source_id?: string
+          surface?: Database["public"]["Enums"]["ai_surface"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      checkins: {
+        Row: {
+          activity: string
+          created_at: string
+          emotion: string
+          energy: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          activity: string
+          created_at?: string
+          emotion: string
+          energy: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          activity?: string
+          created_at?: string
+          emotion?: string
+          energy?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      debriefs: {
+        Row: {
+          created_at: string
+          id: string
+          input_text: string
+          micro_action: string | null
+          model: string | null
+          pattern: string | null
+          prompt_version: string | null
+          reframe: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          input_text: string
+          micro_action?: string | null
+          model?: string | null
+          pattern?: string | null
+          prompt_version?: string | null
+          reframe?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          input_text?: string
+          micro_action?: string | null
+          model?: string | null
+          pattern?: string | null
+          prompt_version?: string | null
+          reframe?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loops: {
+        Row: {
+          answers_snapshot: Json | null
+          created_at: string
+          id: string
+          is_current: boolean
+          model: string | null
+          name: string
+          prompt_version: string | null
+          summary: string
+          trigger_chain: Json
+          user_id: string
+        }
+        Insert: {
+          answers_snapshot?: Json | null
+          created_at?: string
+          id?: string
+          is_current?: boolean
+          model?: string | null
+          name: string
+          prompt_version?: string | null
+          summary: string
+          trigger_chain?: Json
+          user_id: string
+        }
+        Update: {
+          answers_snapshot?: Json | null
+          created_at?: string
+          id?: string
+          is_current?: boolean
+          model?: string | null
+          name?: string
+          prompt_version?: string | null
+          summary?: string
+          trigger_chain?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      onboarding_answers: {
+        Row: {
+          age: string | null
+          apps: Json | null
+          completed_at: string | null
+          control: number | null
+          created_at: string
+          duration: string | null
+          feeling: string | null
+          story: string | null
+          timing: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age?: string | null
+          apps?: Json | null
+          completed_at?: string | null
+          control?: number | null
+          created_at?: string
+          duration?: string | null
+          feeling?: string | null
+          story?: string | null
+          timing?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age?: string | null
+          apps?: Json | null
+          completed_at?: string | null
+          control?: number | null
+          created_at?: string
+          duration?: string | null
+          feeling?: string | null
+          story?: string | null
+          timing?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          plan: string | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          trial_end: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          plan?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_end?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          plan?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_end?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      ai_feedback_reason:
+        | "generic"
+        | "inaccurate"
+        | "tone_off"
+        | "too_long"
+        | "other"
+      ai_rating: "up" | "down"
+      ai_surface: "loop_card" | "debrief_card" | "monthly_report"
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +430,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      ai_feedback_reason: [
+        "generic",
+        "inaccurate",
+        "tone_off",
+        "too_long",
+        "other",
+      ],
+      ai_rating: ["up", "down"],
+      ai_surface: ["loop_card", "debrief_card", "monthly_report"],
+      app_role: ["admin", "user"],
+    },
   },
 } as const
