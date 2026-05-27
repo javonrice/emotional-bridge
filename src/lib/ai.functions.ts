@@ -219,3 +219,126 @@ export const recordAIFeedback = createServerFn({ method: "POST" })
     if (error) return { ok: false, error: error.message };
     return { ok: true, error: null as string | null };
   });
+
+// ============= Monthly report =============
+
+const MonthlyInput = z.object({
+  tz_offset_minutes: z.number().int().min(-14 * 60).max(14 * 60),
+  force: z.boolean().optional(),
+});
+
+const MonthlyOutputSchema = z.object({
+  pattern: z.string().describe("One short sentence (max 18 words), second-person, naming the dominant emotional pattern across the last 30 days. Warm, observational, never shaming."),
+  the_shift: z.string().describe("One short sentence (max 18 words) describing what shifted across the month — fewer late-night spirals, more calm mornings, or honestly noting little has changed yet. Second-person."),
+});
+
+function localDayKeyUTC(iso: string, tzOffsetMin: number): string {
+  const t = new Date(iso).getTime() - tzOffsetMin * 60 * 1000;
+  return new Date(t).toISOString().slice(0, 10);
+}
+
+export const generateMonthlyReport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => MonthlyInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const todayKey = localDayKeyUTC(new Date().toISOString(), data.tz_offset_minutes);
+
+    if (!data.force) {
+      const { data: cached } = await supabase
+        .from("monthly_reports")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("period_end", todayKey)
+        .maybeSingle();
+      if (cached) return { report: cached, error: null as string | null };
+    }
+
+    const since = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString();
+    const { data: rows, error: checkErr } = await supabase
+      .from("checkins")
+      .select("created_at, emotion, activity, energy")
+      .eq("user_id", userId)
+      .gte("created_at", since)
+      .order("created_at", { ascending: true });
+    if (checkErr) return { report: null, error: checkErr.message };
+
+    const total = rows?.length ?? 0;
+    if (total < 30) {
+      return { report: null, error: "Need at least 30 check-ins to generate a monthly report." };
+    }
+
+    const emotionCount: Record<string, number> = {};
+    const activityCount: Record<string, number> = {};
+    for (const r of rows ?? []) {
+      const e = (r.emotion as string).toLowerCase();
+      const a = (r.activity as string).toLowerCase();
+      emotionCount[e] = (emotionCount[e] ?? 0) + 1;
+      activityCount[a] = (activityCount[a] ?? 0) + 1;
+    }
+    const mostLoud = Object.entries(emotionCount).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    const topGateway = Object.entries(activityCount).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
+    const half = Math.floor((rows ?? []).length / 2);
+    const countTop = (arr: typeof rows) => {
+      const m: Record<string, number> = {};
+      for (const r of arr ?? []) {
+        const e = (r!.emotion as string).toLowerCase();
+        m[e] = (m[e] ?? 0) + 1;
+      }
+      return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    };
+    const firstHalfTop = countTop((rows ?? []).slice(0, half));
+    const secondHalfTop = countTop((rows ?? []).slice(half));
+
+    const prompt = `You are LOOP. Generate two short reflections for a user's 30-day awareness report. Tone: warm, observational, second-person, no advice, no shaming, no diagnosis.
+
+Data:
+- Total check-ins (last 30 days): ${total}
+- Most loud feeling: ${mostLoud ?? "none"}
+- Top activity context: ${topGateway ?? "none"}
+- First half top feelings: ${firstHalfTop.map(([k, v]) => `${k}(${v})`).join(", ")}
+- Second half top feelings: ${secondHalfTop.map(([k, v]) => `${k}(${v})`).join(", ")}
+
+Write a "pattern" sentence and a "the_shift" sentence. If little changed, say so honestly.`;
+
+    let pattern: string | null = null;
+    let the_shift: string | null = null;
+    try {
+      const gateway = getGateway();
+      const { experimental_output } = await generateText({
+        model: gateway(MODEL_ID),
+        experimental_output: Output.object({ schema: MonthlyOutputSchema }),
+        prompt,
+      });
+      pattern = experimental_output.pattern;
+      the_shift = experimental_output.the_shift;
+    } catch (e) {
+      pattern = mostLoud
+        ? `${mostLoud.charAt(0).toUpperCase() + mostLoud.slice(1)} ran underneath most of your month.`
+        : "Your month had a steady rhythm of awareness.";
+      the_shift = "You showed up every day this month. That is the shift.";
+      console.error("monthly report ai error", e);
+    }
+
+    const insertPayload = {
+      user_id: userId,
+      period_end: todayKey,
+      the_number: total,
+      most_loud: mostLoud,
+      pattern,
+      top_gateway: topGateway,
+      the_shift,
+      model: MODEL_ID,
+      prompt_version: PROMPT_VERSION,
+    };
+
+    const { data: upserted, error: upErr } = await supabase
+      .from("monthly_reports")
+      .upsert(insertPayload, { onConflict: "user_id,period_end" })
+      .select()
+      .single();
+    if (upErr) return { report: null, error: upErr.message };
+
+    return { report: upserted, error: null as string | null };
+  });
