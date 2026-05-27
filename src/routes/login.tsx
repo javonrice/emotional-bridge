@@ -53,14 +53,27 @@ function Login() {
 
   const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (busy) return;
     setBusy(true); setErr(null);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email, password,
           options: { emailRedirectTo: window.location.origin + "/login" },
         });
         if (error) throw error;
+        // Supabase returns 200 with no session and an empty identities array when the email
+        // is already registered (anti-enumeration). Flip to sign-in mode so the user can continue.
+        if (data.user && !data.session && (data.user.identities?.length ?? 0) === 0) {
+          setMode("signin");
+          setErr("An account with this email already exists — sign in to continue.");
+          return;
+        }
+        // Auto-confirm is enabled; if no session came back, surface that explicitly.
+        if (!data.session) {
+          setErr("Check your email to confirm your account, then sign in.");
+          return;
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
