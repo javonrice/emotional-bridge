@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
@@ -9,14 +9,22 @@ import { IosWaitlistSheet } from "@/components/ios/ComingSoonBadge";
 import { useEntitlements } from "@/hooks/useEntitlements";
 import { useOnboarding } from "@/lib/onboarding-store";
 
+type Tab = "gateway" | "loop" | "monthly";
+
 export const Route = createFileRoute("/app/insights")({
+  validateSearch: (search: Record<string, unknown>): { tab?: Tab } => {
+    const t = search.tab;
+    return t === "gateway" || t === "loop" || t === "monthly" ? { tab: t } : {};
+  },
   component: Insights,
 });
 
-type Tab = "gateway" | "loop" | "monthly";
-
 function Insights() {
-  const [tab, setTab] = useState<Tab>("gateway");
+  const { tab: initialTab } = Route.useSearch();
+  const [tab, setTab] = useState<Tab>(initialTab ?? "gateway");
+  useEffect(() => {
+    if (initialTab) setTab(initialTab);
+  }, [initialTab]);
   const [waitlist, setWaitlist] = useState(false);
   const { tier } = useEntitlements();
   const { answers } = useOnboarding();
