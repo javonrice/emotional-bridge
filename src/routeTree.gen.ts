@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingWelcomeRouteImport } from './routes/onboarding.welcome'
+import { Route as OnboardingTrackingModeRouteImport } from './routes/onboarding.tracking-mode'
 import { Route as OnboardingTimingRouteImport } from './routes/onboarding.timing'
 import { Route as OnboardingStoryRouteImport } from './routes/onboarding.story'
 import { Route as OnboardingScienceRouteImport } from './routes/onboarding.science'
@@ -60,6 +61,11 @@ const IndexRoute = IndexRouteImport.update({
 const OnboardingWelcomeRoute = OnboardingWelcomeRouteImport.update({
   id: '/onboarding/welcome',
   path: '/onboarding/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingTrackingModeRoute = OnboardingTrackingModeRouteImport.update({
+  id: '/onboarding/tracking-mode',
+  path: '/onboarding/tracking-mode',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingTimingRoute = OnboardingTimingRouteImport.update({
@@ -200,6 +206,7 @@ export interface FileRoutesByFullPath {
   '/onboarding/science': typeof OnboardingScienceRoute
   '/onboarding/story': typeof OnboardingStoryRoute
   '/onboarding/timing': typeof OnboardingTimingRoute
+  '/onboarding/tracking-mode': typeof OnboardingTrackingModeRoute
   '/onboarding/welcome': typeof OnboardingWelcomeRoute
 }
 export interface FileRoutesByTo {
@@ -229,6 +236,7 @@ export interface FileRoutesByTo {
   '/onboarding/science': typeof OnboardingScienceRoute
   '/onboarding/story': typeof OnboardingStoryRoute
   '/onboarding/timing': typeof OnboardingTimingRoute
+  '/onboarding/tracking-mode': typeof OnboardingTrackingModeRoute
   '/onboarding/welcome': typeof OnboardingWelcomeRoute
 }
 export interface FileRoutesById {
@@ -259,6 +267,7 @@ export interface FileRoutesById {
   '/onboarding/science': typeof OnboardingScienceRoute
   '/onboarding/story': typeof OnboardingStoryRoute
   '/onboarding/timing': typeof OnboardingTimingRoute
+  '/onboarding/tracking-mode': typeof OnboardingTrackingModeRoute
   '/onboarding/welcome': typeof OnboardingWelcomeRoute
 }
 export interface FileRouteTypes {
@@ -290,6 +299,7 @@ export interface FileRouteTypes {
     | '/onboarding/science'
     | '/onboarding/story'
     | '/onboarding/timing'
+    | '/onboarding/tracking-mode'
     | '/onboarding/welcome'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -319,6 +329,7 @@ export interface FileRouteTypes {
     | '/onboarding/science'
     | '/onboarding/story'
     | '/onboarding/timing'
+    | '/onboarding/tracking-mode'
     | '/onboarding/welcome'
   id:
     | '__root__'
@@ -348,6 +359,7 @@ export interface FileRouteTypes {
     | '/onboarding/science'
     | '/onboarding/story'
     | '/onboarding/timing'
+    | '/onboarding/tracking-mode'
     | '/onboarding/welcome'
   fileRoutesById: FileRoutesById
 }
@@ -373,6 +385,7 @@ export interface RootRouteChildren {
   OnboardingScienceRoute: typeof OnboardingScienceRoute
   OnboardingStoryRoute: typeof OnboardingStoryRoute
   OnboardingTimingRoute: typeof OnboardingTimingRoute
+  OnboardingTrackingModeRoute: typeof OnboardingTrackingModeRoute
   OnboardingWelcomeRoute: typeof OnboardingWelcomeRoute
 }
 
@@ -411,6 +424,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding/welcome'
       fullPath: '/onboarding/welcome'
       preLoaderRoute: typeof OnboardingWelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/tracking-mode': {
+      id: '/onboarding/tracking-mode'
+      path: '/onboarding/tracking-mode'
+      fullPath: '/onboarding/tracking-mode'
+      preLoaderRoute: typeof OnboardingTrackingModeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding/timing': {
@@ -610,6 +630,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingScienceRoute: OnboardingScienceRoute,
   OnboardingStoryRoute: OnboardingStoryRoute,
   OnboardingTimingRoute: OnboardingTimingRoute,
+  OnboardingTrackingModeRoute: OnboardingTrackingModeRoute,
   OnboardingWelcomeRoute: OnboardingWelcomeRoute,
 }
 export const routeTree = rootRouteImport
