@@ -42,8 +42,11 @@ function StreakRing({ value }: { value: number }) {
 function Today() {
   const { answers } = useOnboarding();
   const { streak } = useStreak();
-  const loopName = deriveLoopName(answers);
-  const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening";
+  const [greeting, setGreeting] = useState("Hello");
+  useEffect(() => {
+    const h = new Date().getHours();
+    setGreeting(h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
+  }, []);
 
   return (
     <div className="safe-top px-6 pb-4">
