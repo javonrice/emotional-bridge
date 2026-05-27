@@ -31,6 +31,7 @@ function Debrief() {
   const submit = useServerFn(generateDebrief);
   const historyFn = useServerFn(getDebriefHistory);
   const qc = useQueryClient();
+  const ent = useEntitlements();
   const { data: history } = useQuery({
     queryKey: ["debrief-history"],
     queryFn: () => historyFn(),
@@ -40,6 +41,8 @@ function Debrief() {
   const [debrief, setDebrief] = useState<DebriefRow | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   const startVoice = () => {
     const SR =
