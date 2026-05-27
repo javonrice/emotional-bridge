@@ -1,9 +1,10 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Check } from "lucide-react";
+import { Check, ChevronRight } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { saveCheckin } from "@/lib/checkins.functions";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { saveCheckin, getCheckinStats } from "@/lib/checkins.functions";
 import { track } from "@/lib/analytics.functions";
 
 
@@ -17,15 +18,35 @@ const STEPS = [
   { key: "activity", title: "What were you just doing?", options: ["Work", "Scrolling", "Resting", "Out with people", "Training", "Just woke up"] },
 ] as const;
 
+function milestoneFor(streak: number): { eyebrow: string; headline: string } | null {
+  if (streak === 1) return { eyebrow: "First check-in", headline: "Day one. Your map starts now." };
+  if (streak === 7) return { eyebrow: "Week one", headline: "Seven days. Your pattern is forming." };
+  if (streak === 14)
+    return { eyebrow: "Two weeks", headline: "Your loop map is now fully visible." };
+  if (streak === 30)
+    return { eyebrow: "30 days", headline: "You have a real map now. Your report is ready." };
+  return null;
+}
+
 function CheckIn() {
   const nav = useNavigate();
   const save = useServerFn(saveCheckin);
+  const statsFn = useServerFn(getCheckinStats);
+  const qc = useQueryClient();
+  const tzOffset = typeof window !== "undefined" ? new Date().getTimezoneOffset() : 0;
   const [step, setStep] = useState(0);
   const [picks, setPicks] = useState<Record<string, string>>({});
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const current = STEPS[step];
+
+  // Fetch fresh stats once we're in the done state
+  const { data: stats } = useQuery({
+    queryKey: ["checkin-stats", tzOffset],
+    queryFn: () => statsFn({ data: { tz_offset_minutes: tzOffset } }),
+    enabled: done,
+  });
 
   const pick = async (v: string) => {
     const next = { ...picks, [current.key]: v };
@@ -41,11 +62,14 @@ function CheckIn() {
           energy: next.energy,
           emotion: next.emotion,
           activity: next.activity,
-          tz_offset_minutes: new Date().getTimezoneOffset(),
+          tz_offset_minutes: tzOffset,
         },
       });
       if (!res.ok) setError(res.error ?? "Could not save check-in.");
-      else void track("checkin.save", { emotion: next.emotion, energy: next.energy });
+      else {
+        void track("checkin.save", { emotion: next.emotion, energy: next.energy });
+        await qc.invalidateQueries({ queryKey: ["checkin-stats", tzOffset] });
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save check-in.");
     }
@@ -54,17 +78,76 @@ function CheckIn() {
 
 
   if (done) {
+    const streak = stats?.streak ?? 0;
+    const milestone = milestoneFor(streak);
+    const isDayOne = streak === 1;
+
     return (
       <div className="safe-top flex min-h-[80vh] flex-col items-center justify-center px-6 text-center">
-        <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex h-20 w-20 items-center justify-center rounded-full bg-success/20 text-success">
-          <Check size={36} />
+        {milestone && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary"
+          >
+            {milestone.eyebrow}
+          </motion.div>
+        )}
+
+        <motion.div
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/15 text-primary"
+        >
+          {streak > 0 ? (
+            <span className="text-4xl font-bold tabular-nums text-glow">{streak}</span>
+          ) : (
+            <Check size={36} />
+          )}
         </motion.div>
-        <h2 className="mt-6 text-2xl font-bold">Logged.</h2>
-        <p className="mt-2 max-w-xs text-sm text-muted-foreground">Every check-in builds your map. Your loop is getting clearer.</p>
+
+        <h2 className="mt-6 text-2xl font-bold leading-tight">
+          {milestone ? milestone.headline : "Logged."}
+        </h2>
+        <p className="mt-2 max-w-xs text-sm text-muted-foreground">
+          {milestone
+            ? "Every check-in builds your map. Your loop is getting clearer."
+            : `${streak}-day streak. Every check-in builds your map.`}
+        </p>
         {error && <p className="mt-3 max-w-xs text-xs text-destructive">{error}</p>}
-        <button onClick={() => nav({ to: "/app/today" })} className="ios-pill tap-scale mt-8 h-12 w-full max-w-xs bg-primary px-6 font-semibold text-primary-foreground">
-          Back to today
+
+        <Link
+          to="/app/debrief"
+          className="ios-pill tap-scale mt-8 flex h-12 w-full max-w-xs items-center justify-center gap-1 bg-primary px-6 font-semibold text-primary-foreground"
+        >
+          Anything on your mind? Talk it out <ChevronRight size={16} />
+        </Link>
+
+        <button
+          onClick={() => nav({ to: "/app/today" })}
+          className="tap-scale mt-3 text-sm font-medium text-muted-foreground"
+        >
+          Not right now
         </button>
+
+        {isDayOne && (
+          <button
+            onClick={() => {
+              if (typeof navigator !== "undefined" && navigator.share) {
+                navigator
+                  .share({
+                    title: "LOOP",
+                    text: "Day one. My map starts now.",
+                  })
+                  .catch(() => {});
+              }
+            }}
+            className="tap-scale mt-6 text-[11px] uppercase tracking-wider text-muted-foreground/70"
+          >
+            Share your start
+          </button>
+        )}
       </div>
     );
   }
