@@ -1,166 +1,83 @@
+## Pre-flight
+Approve the `payments--batch_create_product` batch (still pending) so `loop_annual`, `loop_monthly`, `loop_lifetime` lookup keys resolve in checkout before Item 3/4 are exercised end-to-end.
 
-# LOOP — Phased Build Plan (Prototype → Shippable Product)
+Note on rate limiting: backend doesn't have first-class rate-limit primitives yet, so the implementation is an ad-hoc table count (same shape we already used on `generateLoop`). Acknowledged and proceeding per your request.
 
-**Product framing:** LOOP ships as a **self-report awareness tool**. Every screen that would consume iOS Screen Time data shows a "🍎 Auto-tracking — Coming soon on iOS" badge with a waitlist tap, while the user manually logs check-ins and debriefs. Lovable AI Gateway powers the personalized loop naming, debrief reframes, and pattern summaries — with thumbs-up/down feedback wired in from day one so we can iterate prompts on real signal.
+## Item 1 — Rate limit `generateDebrief`
+`src/lib/ai.functions.ts`: at the top of `generateDebrief.handler`, before the AI call:
+- Query `debriefs` where `user_id = auth.uid()` and `created_at > now() - interval '1 hour'`, head count.
+- If `count >= 3`, return `{ debrief: null, error: "You've hit your hourly limit. Try again in a bit." }`.
+- Runs for all users (paid included). Must execute BEFORE the free-tier check in Item 3.
 
----
+## Item 2 — Global `PaymentTestModeBanner`
+`src/routes/__root.tsx`: import existing `PaymentTestModeBanner` and render it inside `RootComponent` at the top of the `max-w-[430px]` wrapper, above `<main>`. Existing component already no-ops on `pk_live_`. No new component.
 
-## Phase 1 — Foundation: Cloud, Auth, Data Migration
-**Goal:** Real backend, real users, localStorage answers persist to the cloud.
+## Item 3 — Free-tier gating
 
-- Enable Lovable Cloud.
-- Auth: email/password + Google (via Lovable broker). `/login`, `/signup`, `/reset-password`, `/auth/callback`.
-- Tables (all RLS-on, `user_roles` separate):
-  - `profiles` (auto-created via trigger)
-  - `onboarding_answers` (one row per user)
-  - `checkins` (energy, emotion, activity, timestamp)
-  - `debriefs` (text, reframe_json, created_at)
-  - `loops` (name, trigger_chain, summary, generated_by_ai, model, prompt_version)
-  - `subscriptions` (plan, status, trial_end, stripe_customer_id)
-  - `user_roles` + `has_role()` security-definer function
-- `_authenticated` layout wraps `/app/*`; unauth users → `/login`.
-- One-time localStorage → Cloud migration on first login.
-- Server fn `migrateLocalAnswers`.
+**New hook `src/hooks/useEntitlements.ts`:**
+- Wraps `useSubscription()`.
+- Returns `{ tier: 'free' | 'paid', isPaid: boolean, debriefsRemaining: number | null }`.
+- Paid → `debriefsRemaining: null`.
+- Free → query lifetime debrief count for `auth.uid()` (head count, no env filter), compute `Math.max(0, 3 - count)`. Cache via react-query keyed `['entitlements', userId]`; invalidate after each successful debrief.
 
-**Deliverable:** A user can sign up, get their data persisted, sign in on another device and see the same loop.
+**Server-side gate in `generateDebrief` (after Item 1's hourly check):**
+- Look up subscription row for `auth.uid()` with `environment = current env` and active status (same predicate as `has_active_subscription`).
+- If not paid AND lifetime `debriefs` count for user `>= 3`, return `{ debrief: null, error: "PAYWALL", upgradeRequired: true }`.
 
----
+**`src/routes/app.debrief.tsx`:**
+- When server returns `upgradeRequired: true`, switch the `card` stage to a soft paywall card instead of redirecting.
+- Copy (exact): heading "You've used your 3 free debriefs", body "Unlock unlimited debriefs, your full Loop Map, and monthly pattern reports."
+- Primary CTA "Unlock LOOP · $14.99/mo" → `/paywall?source=debrief_limit`.
+- Secondary "Maybe later" → dismisses card back to input stage.
 
-## Phase 2 — AI Gateway: Generation + Quality Feedback Loop
-**Goal:** Replace `deriveLoopName` template with real LLM output, and instrument quality from day one.
+**`src/routes/app.insights.tsx`:**
+- For free users (`useEntitlements().tier === 'free'`), render inline CTA below the existing sketch badge: "Full map unlocks with membership →" linking to `/paywall?source=insights`.
+- Page stays unGated; sketch stays visible for everyone.
 
-### Generation
-- Add `LOVABLE_API_KEY` via `ai_gateway--create`.
-- `src/lib/ai-gateway.server.ts` helper (OpenAI-compat provider).
-- Server fns (`createServerFn` + `requireSupabaseAuth`):
-  - `generateLoop({ answers })` → structured output (loop name, 3 trigger chain pills, 3-sentence summary). Persisted to `loops` with `model` + `prompt_version`.
-  - `generateDebrief({ text })` → structured reframe card (pattern, gentle reframe, micro-action). Persisted to `debriefs` with same metadata.
-  - `generateMonthlyReport({ userId })` → Spotify-Wrapped style narrative.
-- Model: `google/gemini-3-flash-preview`. Surface 429/402 as friendly toasts.
-- Onboarding `analyzing.tsx` calls real `generateLoop`.
+## Item 4 — Manage subscription portal
+`src/routes/app.profile.tsx`:
+- Use `useSubscription()`; only render the "Manage subscription" row when `isActive`.
+- Local state holds `{ portalUrl?: string; error?: string }`.
+- On row tap (no auto-open): call `createPortalSession({ data: { environment: getStripeEnvironment(), returnUrl: window.location.origin + '/app/profile' } })`.
+- On success: replace the row in-place with a styled anchor "Continue to billing →" pointing at returned `url`, `target="_blank"`, `rel="noopener noreferrer"`. User-initiated click → not blocked by iOS PWA popup guard.
+- On error: render the error message inline beneath the row in destructive text.
+- Replace the current hardcoded `detail="Annual"` (which is fake data) — show plan label from subscription row when available.
 
-### Quality feedback (day-one signal)
-- New table `ai_feedback`:
-  ```
-  id, user_id, surface ('loop_card' | 'debrief_card' | 'monthly_report'),
-  source_id (FK to loops/debriefs), rating ('up' | 'down'),
-  reason (nullable enum: 'generic', 'inaccurate', 'tone_off', 'too_long', 'other'),
-  comment (nullable text, max 500), model, prompt_version,
-  answers_snapshot (jsonb — what the prompt saw), created_at
-  ```
-  RLS: user inserts own rows; admin role reads all.
-- `<AIFeedback />` component: subtle thumbs-up/down pair under every AI-generated card. One-tap up = silent log. Tap down → sheet with reason chips + optional comment.
-- Wired into: First Loop Reveal card (onboarding), every Debrief Card, every Monthly Report card.
-- Server fn `recordAIFeedback({ surface, sourceId, rating, reason?, comment? })`.
-- Admin route `/admin/ai-quality` (gated by `has_role('admin')`):
-  - 7/30/90-day up/down rates per `surface` and `prompt_version`.
-  - Filter by reason; sort low-rated outputs to inspect prompt + answers snapshot side-by-side.
-  - "Bad output" view for prompt iteration.
-- `prompt_version` constant in `ai-gateway.server.ts` — bump on every prompt change so we can A/B compare versions in the admin view.
-- Optional: random 10% of outputs get a second model run (`gpt-5-mini`) stored shadow-side for offline comparison once dataset is meaningful.
+## Item 5 — Paywall analytics
 
-**Deliverable:** Every AI output is rateable, every rating is tied to the exact prompt version + inputs that produced it, and we have a real dashboard for prompt iteration instead of vibes.
+**`src/routes/paywall.tsx`:**
+- Add `validateSearch` to read `?source=` (typed string, optional, defaults to `'unknown'`).
+- On mount: `track('paywall.view', { source, loopName })`.
+- In plan setter: `track('paywall.plan_select', { plan })`.
+- In `start()` before `openCheckout`: `track('paywall.checkout_start', { plan, source })`.
 
----
+**Call site updates:**
+- Onboarding completion route that navigates to `/paywall` → pass `search: { source: 'onboarding' }`. (Locate via grep of `to: "/paywall"`.)
+- Debrief soft-paywall CTA from Item 3 → `/paywall?source=debrief_limit`.
+- Insights inline CTA from Item 3 → `/paywall?source=insights`.
 
-## Phase 3 — Payments: Stripe Subscriptions
-**Goal:** Paywall enforces access; free tier is intentionally thin.
+**`src/routes/checkout.return.tsx`:**
+- On mount, if `session_id` present: `track('paywall.checkout_complete', { session_id })`. Fire-and-forget in a `useEffect` with empty deps.
 
-- Run `recommend_payment_provider` → enable Stripe (digital service).
-- Products: Annual $59.99 (7d trial), Monthly $14.99, Lifetime $149.
-- Checkout server fn + `/api/public/stripe-webhook` route (signature verified) → writes `subscriptions` row.
-- `useSubscription()` hook gates premium routes.
-- **Free tier:** today + 1 check-in/day, no debrief, no insights, no loop reveal beyond name.
-- "Maybe later" → real limited mode.
-- Restore purchase + Stripe portal link.
+**Webhook `src/routes/api/public/payments/webhook.ts`:**
+- In `handleSubscriptionCreated` and `handleSubscriptionUpdated`, after the upsert/update, if `subscription.status === 'active'`, insert into `events` table via `supabaseAdmin`:
+  `{ name: 'subscription.activated', user_id: userId, props: { stripe_customer_id, plan: priceId } }`.
+- Confirms money cleared; independent from client-side `checkout_complete`.
 
-**Deliverable:** Real money can be collected; non-payers see a real wall.
+## Cross-cutting invariants
+- Hourly rate limit (Item 1) runs BEFORE free-tier gate (Item 3) — paid users hitting 3/hr see the rate-limit message, never the paywall.
+- No DB migrations.
+- No new secrets.
+- Paywall copy untouched.
 
----
-
-## Phase 4 — iOS "Coming Soon" Layer
-**Goal:** Honestly position auto-tracking as future native iOS without breaking the PRD's promise.
-
-- Reusable `<ComingSoonBadge variant="ios" />` — Apple glyph + "Auto-tracking · iOS soon".
-- `onboarding.tracking-mode.tsx`: **Self-report (now)** vs **Auto-tracking (iOS, coming soon — join waitlist)**.
-- `ios_waitlist` table; "Notify me" stores email + answers.
-- Insights → Gateway: blurred "auto-detected" card with Coming Soon overlay + "For now, based on what you told us" using self-reported `apps`.
-- Drift windows: manual picker now, "auto-detected" Coming Soon.
-- Profile → "Connect iOS Screen Time" → waitlist sheet.
-- Feature flag flips these live when native ships, no redesign.
-
-**Deliverable:** Product feels complete and honest.
-
----
-
-## Phase 5 — Core App Completion (self-report depth)
-**Goal:** The five tabs become a real daily product.
-
-- **Today:** real streak (server-computed, timezone-aware, decays on miss), check-in CTA, latest insight card, manual drift reminder chip.
-- **Check-in:** persist to `checkins`, back-nav between steps, edit today's entry.
-- **Debrief:** Web Speech API voice input, submit → real `generateDebrief`, history list, share-card PNG export (html-to-image), thumbs feedback inline.
-- **Insights:**
-  - Gateway (self-report): tally from check-in `activity` over time.
-  - Loop: SVG flow from real check-in sequences (≥14 entries; <14 → "X more days" empty state).
-  - Monthly: real `generateMonthlyReport` at ≥30 days, also rateable.
-- **Profile:** real stats grid, edit loop name, manage subscription, notification settings, export data (GDPR), delete account. Remove dev "Restart onboarding".
-
-**Deliverable:** No mock data anywhere; loading/empty/error states everywhere.
-
----
-
-## Phase 6 — Notifications & Install
-**Goal:** Re-engagement within PWA limits.
-
-- Notification permission screen post-paywall.
-- Web Push via SW (Android + iOS 16.4+ installed PWA).
-- `scheduleDriftReminder` server fn + daily cron at `/api/public/cron/drift-push`.
-- "Add to Home Screen" iOS walkthrough.
-- Service Worker (kill-switch-safe pattern): offline shell + push only, NetworkFirst HTML.
-- Splash screens, theme-color, manifest polish.
-
-**Deliverable:** Daily nudge on installed PWAs.
-
----
-
-## Phase 7 — Safety, Legal, Trust
-**Goal:** Mental-health-adjacent product ships responsibly.
-
-- Crisis resource screen (Profile + auto-surfaced on risk-keyword regex pre-filter in debrief input).
-- Disclaimer on first AI output: "LOOP is not therapy."
-- Terms, Privacy, EULA pages (placeholder; flag for legal review).
-- Subscription terms on paywall (auto-renewal, cancel anytime).
-- Cookie/analytics consent banner.
-- Data export + account deletion endpoints.
-
-**Deliverable:** GDPR / subscription guidelines defensible.
-
----
-
-## Phase 8 — Polish, A11y, Funnel Analytics
-**Goal:** Ship-quality finish.
-
-- **Funnel analytics** (separate from AI feedback): events on every onboarding step + paywall view/select/start/abandon + check-in + debrief submit + feedback rating. Write to local `events` table; query for funnel + retention. PostHog optional later.
-- A11y: ARIA on custom buttons, focus rings, WCAG AA contrast, `prefers-reduced-motion` opt-out, SVG `<title>` labels.
-- 404, error boundaries on every route.
-- `noindex` on onboarding/auth.
-- Lighthouse 90+ mobile.
-
-**Deliverable:** Production-ready.
-
----
-
-## Technical Notes
-
-- All AI calls via `createServerFn` + `requireSupabaseAuth` + `ai-gateway.server.ts`. No client-side AI keys.
-- Every AI generation writes `model` + `prompt_version` alongside its output — feedback joins on that to compare prompts.
-- All payment writes via signed Stripe webhook → `supabaseAdmin`.
-- Every new table: `GRANT` block + RLS policies in the same migration.
-- Verify `src/start.ts` has `attachSupabaseAuth` in `functionMiddleware` before Phase 1.
-- iOS "Coming Soon" is a single component reused everywhere.
-
-## Out of scope (deferred to native iOS app)
-Real Screen Time data, precise background push scheduling, Apple/Google IAP, App Store submission, native haptics. All visible in-product as "Coming soon."
-
-## Build order
-Phase 1 → 2 → 3 = product-vs-prototype line. Phases 4–8 = shippable-product line. Each phase independently shippable.
+## Files touched
+- `src/lib/ai.functions.ts` (Items 1 + 3)
+- `src/routes/__root.tsx` (Item 2)
+- `src/hooks/useEntitlements.ts` — new (Item 3)
+- `src/routes/app.debrief.tsx` (Item 3)
+- `src/routes/app.insights.tsx` (Item 3)
+- `src/routes/app.profile.tsx` (Item 4)
+- `src/routes/paywall.tsx` (Item 5)
+- `src/routes/checkout.return.tsx` (Item 5)
+- `src/routes/api/public/payments/webhook.ts` (Item 5)
+- 1–2 onboarding files that link to `/paywall` (Item 5 call-site update)
