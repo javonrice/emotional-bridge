@@ -17,7 +17,7 @@ function RevealMirror() {
   return (
     <ScreenShell>
       <div className="flex flex-1 flex-col justify-center">
-        <Eyebrow>9,420 men answered like you</Eyebrow>
+        <Eyebrow>9,420 people answered like you</Eyebrow>
         <H1>
           They all described the <span className="text-primary">same</span> sequence.
         </H1>
