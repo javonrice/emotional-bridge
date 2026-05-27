@@ -6,6 +6,7 @@ export const Route = createFileRoute("/onboarding/commit")({
 });
 
 function Commit() {
+  const nav = useNavigate();
   return (
     <ScreenShell>
       <div className="flex flex-1 flex-col justify-center">
