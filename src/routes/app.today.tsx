@@ -42,6 +42,7 @@ function StreakRing({ value }: { value: number }) {
 function Today() {
   const { answers } = useOnboarding();
   const { streak } = useStreak();
+  const loopName = deriveLoopName(answers);
   const [greeting, setGreeting] = useState("Hello");
   useEffect(() => {
     const h = new Date().getHours();
