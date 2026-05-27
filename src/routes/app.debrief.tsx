@@ -101,13 +101,16 @@ function Debrief() {
               rows={8}
               className="w-full resize-none rounded-2xl border border-white/8 bg-card p-4 text-[16px] leading-relaxed placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none"
             />
+            {risk && <CrisisBanner />}
             <button
               onClick={startVoice}
+              aria-label={listening ? "Stop voice input" : "Start voice input"}
               className={`tap-scale mt-3 flex items-center gap-2 rounded-full bg-card px-4 py-2 text-xs ${listening ? "text-primary" : "text-muted-foreground"}`}
             >
-              <Mic size={14} /> {listening ? "Listening…" : "Speak instead"}
+              <Mic size={14} aria-hidden="true" /> {listening ? "Listening…" : "Speak instead"}
             </button>
-            {error && <p className="mt-3 text-xs text-destructive">{error}</p>}
+            {error && <p className="mt-3 text-xs text-destructive" role="alert">{error}</p>}
+
             <button
               onClick={handleSubmit}
               disabled={text.trim().length < 6}
@@ -168,8 +171,9 @@ function Debrief() {
                 </button>
               </div>
             </div>
-
+            <NotTherapyDisclaimer />
             <AIFeedback surface="debrief_card" sourceId={debrief.id} />
+
 
             <button onClick={() => { setStage("input"); setText(""); setDebrief(null); }} className="mt-4 block w-full text-center text-xs text-muted-foreground">
               New debrief
