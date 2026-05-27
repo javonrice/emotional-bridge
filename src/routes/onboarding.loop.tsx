@@ -1,7 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "motion/react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { ScreenShell, H1, PrimaryButton, Eyebrow } from "@/components/loop/Screen";
 import { deriveLoopName, useOnboarding } from "@/lib/onboarding-store";
+import { useAuth } from "@/hooks/use-auth";
+import { getCurrentLoop } from "@/lib/auth.functions";
+import { AIFeedback } from "@/components/loop/AIFeedback";
 
 export const Route = createFileRoute("/onboarding/loop")({
   component: LoopReveal,
@@ -9,14 +14,27 @@ export const Route = createFileRoute("/onboarding/loop")({
 
 function LoopReveal() {
   const { answers } = useOnboarding();
-  const loopName = deriveLoopName(answers);
-  const chain = [
-    answers.feeling ?? "Lonely",
-    `${answers.timing ?? "Late night"} alone`,
-    answers.apps?.[0] ?? "Instagram",
-    "Scroll spiral",
-    "The pull",
-  ];
+  const { isAuthenticated } = useAuth();
+  const fetchLoop = useServerFn(getCurrentLoop);
+  const { data } = useQuery({
+    queryKey: ["current-loop"],
+    queryFn: () => fetchLoop(),
+    enabled: isAuthenticated,
+  });
+
+  const serverLoop = data?.loop;
+  const loopName = serverLoop?.name ?? deriveLoopName(answers);
+  const chain: string[] = Array.isArray(serverLoop?.trigger_chain) && serverLoop.trigger_chain.length
+    ? (serverLoop.trigger_chain as string[])
+    : [
+        answers.feeling ?? "Lonely",
+        `${answers.timing ?? "Late night"} alone`,
+        answers.apps?.[0] ?? "Instagram",
+        "Scroll spiral",
+        "The pull",
+      ];
+  const summary = serverLoop?.summary ??
+    `Your loop tends to fire when ${(answers.feeling ?? "loneliness").toLowerCase()} hits during ${(answers.timing ?? "late night").toLowerCase()} hours. The gateway is usually ${answers.apps?.[0] ?? "Instagram"} — but the real trigger is the feeling 90 minutes earlier. That's where the work lives.`;
 
   return (
     <ScreenShell>
@@ -39,7 +57,7 @@ function LoopReveal() {
           <div className="mt-3 flex flex-wrap gap-2">
             {chain.map((c, i) => (
               <motion.span
-                key={c}
+                key={`${c}-${i}`}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4 + i * 0.12 }}
@@ -51,9 +69,9 @@ function LoopReveal() {
           </div>
 
           <div className="mt-6 text-xs uppercase tracking-[0.18em] text-muted-foreground">Pattern summary</div>
-          <p className="mt-2 text-[15px] leading-relaxed text-foreground/90">
-            Your loop tends to fire when {answers.feeling?.toLowerCase() ?? "loneliness"} hits during {answers.timing?.toLowerCase() ?? "late night"} hours. The gateway is usually {answers.apps?.[0] ?? "Instagram"} — but the real trigger is the feeling 90 minutes earlier. That's where the work lives.
-          </p>
+          <p className="mt-2 text-[15px] leading-relaxed text-foreground/90">{summary}</p>
+
+          {serverLoop?.id && <AIFeedback surface="loop_card" sourceId={serverLoop.id} />}
         </motion.div>
 
         <motion.p

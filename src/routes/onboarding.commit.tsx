@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ScreenShell, H1, PrimaryButton, GhostButton, Eyebrow } from "@/components/loop/Screen";
 
 export const Route = createFileRoute("/onboarding/commit")({
@@ -6,6 +6,7 @@ export const Route = createFileRoute("/onboarding/commit")({
 });
 
 function Commit() {
+  const nav = useNavigate();
   return (
     <ScreenShell>
       <div className="flex flex-1 flex-col justify-center">
@@ -18,8 +19,8 @@ function Commit() {
         </p>
       </div>
       <div className="space-y-3">
-        <PrimaryButton to="/onboarding/plan">Yes — show me everything</PrimaryButton>
-        <GhostButton to="/onboarding/plan">I want to keep going</GhostButton>
+        <PrimaryButton onClick={() => nav({ to: "/login", search: { redirect: "/onboarding/plan" } })}>Yes — show me everything</PrimaryButton>
+        <GhostButton onClick={() => nav({ to: "/login", search: { redirect: "/onboarding/plan" } })}>I want to keep going</GhostButton>
       </div>
     </ScreenShell>
   );
