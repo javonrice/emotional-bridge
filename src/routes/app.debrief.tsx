@@ -206,7 +206,7 @@ function Debrief() {
 
         {stage === "card" && debrief && (
           <motion.div key="c" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
-            <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-[#0A0A0F] to-[#1A1540] p-6">
+            <div ref={cardRef} className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-[#0A0A0F] to-[#1A1540] p-6">
               <div className="absolute right-4 top-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">LOOP</div>
               <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Debrief · today</div>
 
@@ -219,13 +219,35 @@ function Debrief() {
               <div className="mt-5 text-xs uppercase tracking-[0.16em] text-muted-foreground">Try next time</div>
               <p className="mt-2 text-[15px] leading-relaxed text-primary">{debrief.micro_action}</p>
 
-              <div className="mt-6 flex items-center justify-between border-t border-white/5 pt-4">
-                <div className="text-[11px] text-muted-foreground">Awareness logged</div>
-                <button className="tap-scale flex items-center gap-1.5 rounded-full bg-white/8 px-3 py-1.5 text-xs font-medium text-foreground opacity-60">
-                  <Share2 size={12} /> Save card · soon
-                </button>
+              <div className="mt-6 border-t border-white/5 pt-4 text-[11px] text-muted-foreground">
+                Awareness logged · seeyourloop.com
               </div>
             </div>
+
+            <button
+              onClick={handleShare}
+              disabled={sharing}
+              className="tap-scale mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-white/8 px-4 py-2.5 text-xs font-medium text-foreground disabled:opacity-50"
+            >
+              <Share2 size={14} /> {sharing ? "Preparing…" : "Share this insight"}
+            </button>
+
+            {ent.tier === "free" && ent.debriefsRemaining !== null && (
+              <p className="mt-3 text-center text-[11px] text-muted-foreground">
+                {ent.debriefsRemaining > 0
+                  ? `${ent.debriefsRemaining} free debrief${ent.debriefsRemaining === 1 ? "" : "s"} remaining`
+                  : "That was your last free debrief"}
+                {ent.debriefsRemaining <= 1 && (
+                  <>
+                    {" · "}
+                    <Link to="/paywall" search={{ source: "debrief_limit" }} className="text-primary underline-offset-2 hover:underline">
+                      Unlock unlimited
+                    </Link>
+                  </>
+                )}
+              </p>
+            )}
+
             <NotTherapyDisclaimer />
             <AIFeedback surface="debrief_card" sourceId={debrief.id} />
 
