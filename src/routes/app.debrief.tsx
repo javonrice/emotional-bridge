@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Mic, Share2, Lock } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toPng } from "html-to-image";
 import { generateDebrief } from "@/lib/ai.functions";
 import { getDebriefHistory } from "@/lib/checkins.functions";
 import { AIFeedback } from "@/components/loop/AIFeedback";
@@ -11,6 +12,7 @@ import { CrisisBanner } from "@/components/safety/CrisisBanner";
 import { NotTherapyDisclaimer } from "@/components/safety/NotTherapyDisclaimer";
 import { detectRisk } from "@/lib/safety";
 import { track } from "@/lib/analytics.functions";
+import { useEntitlements } from "@/hooks/useEntitlements";
 
 export const Route = createFileRoute("/app/debrief")({
   component: Debrief,
