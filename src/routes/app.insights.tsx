@@ -82,7 +82,19 @@ function Insights() {
         {tab === "loop" && (
           <motion.section key="l" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5">
             <div className="overflow-hidden rounded-3xl border border-white/8 bg-card p-4">
-              <LoopMap />
+              {stats && stats.total >= 3 ? (
+                <LoopMap
+                  emotions={stats.emotions}
+                  edges={stats.edges}
+                />
+              ) : (
+                <div className="flex h-[320px] flex-col items-center justify-center px-6 text-center">
+                  <div className="text-sm font-medium text-foreground/80">Your map is still drawing.</div>
+                  <p className="mt-2 max-w-xs text-xs text-muted-foreground">
+                    Log a few more check-ins. Once we see 3+ transitions between feelings, the loop appears here.
+                  </p>
+                </div>
+              )}
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
               Nodes are emotional states. Edges show what leads where. The brighter the node, the more often you start there.
