@@ -158,6 +158,22 @@ function Debrief() {
               Read it back to me
             </button>
 
+            {ent.tier === "free" && ent.debriefsRemaining !== null && (
+              <p className="mt-3 text-center text-[11px] text-muted-foreground">
+                {ent.debriefsRemaining > 0
+                  ? `${ent.debriefsRemaining} free debrief${ent.debriefsRemaining === 1 ? "" : "s"} remaining`
+                  : "You've used your free debriefs"}
+                {ent.debriefsRemaining <= 1 && (
+                  <>
+                    {" · "}
+                    <Link to="/paywall" search={{ source: "debrief_limit" }} className="text-primary underline-offset-2 hover:underline">
+                      Unlock unlimited
+                    </Link>
+                  </>
+                )}
+              </p>
+            )}
+
             {history?.items && history.items.length > 0 && (
               <div className="mt-10">
                 <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Past debriefs</div>
