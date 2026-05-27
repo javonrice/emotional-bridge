@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { ChevronRight, Sparkles } from "lucide-react";
 import { deriveLoopName, useOnboarding, useStreak } from "@/lib/onboarding-store";
 
@@ -42,7 +43,11 @@ function Today() {
   const { answers } = useOnboarding();
   const { streak } = useStreak();
   const loopName = deriveLoopName(answers);
-  const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening";
+  const [greeting, setGreeting] = useState("Hello");
+  useEffect(() => {
+    const h = new Date().getHours();
+    setGreeting(h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
+  }, []);
 
   return (
     <div className="safe-top px-6 pb-4">
