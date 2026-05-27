@@ -38,14 +38,34 @@ export const getCheckinStats = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const since = new Date(Date.now() - 1000 * 60 * 60 * 24 * 120).toISOString();
-    const { data: rows, error } = await supabase
-      .from("checkins")
-      .select("created_at, emotion, activity, energy")
-      .eq("user_id", userId)
-      .gte("created_at", since)
-      .order("created_at", { ascending: false });
+    const [checkinsRes, debriefsRes] = await Promise.all([
+      supabase
+        .from("checkins")
+        .select("created_at, emotion, activity, energy")
+        .eq("user_id", userId)
+        .gte("created_at", since)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("debriefs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId),
+    ]);
 
-    if (error) return { streak: 0, total: 0, days: [], emotions: [], edges: [], error: error.message };
+    const rows = checkinsRes.data;
+    const error = checkinsRes.error;
+    const totalDebriefs = debriefsRes.count ?? 0;
+
+    if (error)
+      return {
+        streak: 0,
+        total: 0,
+        totalDebriefs,
+        days: [],
+        checkedInToday: false,
+        emotions: [],
+        edges: [],
+        error: error.message,
+      };
 
     const days = new Set<string>();
     const emotionsCount: Record<string, number> = {};
@@ -90,7 +110,9 @@ export const getCheckinStats = createServerFn({ method: "POST" })
     return {
       streak,
       total: rows?.length ?? 0,
+      totalDebriefs,
       days: Array.from(days),
+      checkedInToday: days.has(todayKey),
       emotions,
       edges,
       error: null as string | null,
