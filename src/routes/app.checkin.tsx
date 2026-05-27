@@ -94,6 +94,7 @@ function CheckIn() {
           topEmotion={topEmotion}
           onContinue={() => {
             if (streak === 14) nav({ to: "/app/insights", search: { tab: "loop" } });
+            else if (streak === 30) nav({ to: "/app/insights", search: { tab: "monthly" } });
             else nav({ to: "/app/today" });
           }}
         />
