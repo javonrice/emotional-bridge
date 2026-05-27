@@ -9,6 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PaywallRouteImport } from './routes/paywall'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingWelcomeRouteImport } from './routes/onboarding.welcome'
 import { Route as OnboardingTimingRouteImport } from './routes/onboarding.timing'
@@ -27,7 +29,22 @@ import { Route as OnboardingCommitRouteImport } from './routes/onboarding.commit
 import { Route as OnboardingAppsRouteImport } from './routes/onboarding.apps'
 import { Route as OnboardingAnalyzingRouteImport } from './routes/onboarding.analyzing'
 import { Route as OnboardingAgeRouteImport } from './routes/onboarding.age'
+import { Route as AppTodayRouteImport } from './routes/app.today'
+import { Route as AppProfileRouteImport } from './routes/app.profile'
+import { Route as AppInsightsRouteImport } from './routes/app.insights'
+import { Route as AppDebriefRouteImport } from './routes/app.debrief'
+import { Route as AppCheckinRouteImport } from './routes/app.checkin'
 
+const PaywallRoute = PaywallRouteImport.update({
+  id: '/paywall',
+  path: '/paywall',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -118,9 +135,41 @@ const OnboardingAgeRoute = OnboardingAgeRouteImport.update({
   path: '/onboarding/age',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppTodayRoute = AppTodayRouteImport.update({
+  id: '/today',
+  path: '/today',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProfileRoute = AppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppInsightsRoute = AppInsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDebriefRoute = AppDebriefRouteImport.update({
+  id: '/debrief',
+  path: '/debrief',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCheckinRoute = AppCheckinRouteImport.update({
+  id: '/checkin',
+  path: '/checkin',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/paywall': typeof PaywallRoute
+  '/app/checkin': typeof AppCheckinRoute
+  '/app/debrief': typeof AppDebriefRoute
+  '/app/insights': typeof AppInsightsRoute
+  '/app/profile': typeof AppProfileRoute
+  '/app/today': typeof AppTodayRoute
   '/onboarding/age': typeof OnboardingAgeRoute
   '/onboarding/analyzing': typeof OnboardingAnalyzingRoute
   '/onboarding/apps': typeof OnboardingAppsRoute
@@ -141,6 +190,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/paywall': typeof PaywallRoute
+  '/app/checkin': typeof AppCheckinRoute
+  '/app/debrief': typeof AppDebriefRoute
+  '/app/insights': typeof AppInsightsRoute
+  '/app/profile': typeof AppProfileRoute
+  '/app/today': typeof AppTodayRoute
   '/onboarding/age': typeof OnboardingAgeRoute
   '/onboarding/analyzing': typeof OnboardingAnalyzingRoute
   '/onboarding/apps': typeof OnboardingAppsRoute
@@ -162,6 +218,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/paywall': typeof PaywallRoute
+  '/app/checkin': typeof AppCheckinRoute
+  '/app/debrief': typeof AppDebriefRoute
+  '/app/insights': typeof AppInsightsRoute
+  '/app/profile': typeof AppProfileRoute
+  '/app/today': typeof AppTodayRoute
   '/onboarding/age': typeof OnboardingAgeRoute
   '/onboarding/analyzing': typeof OnboardingAnalyzingRoute
   '/onboarding/apps': typeof OnboardingAppsRoute
@@ -184,6 +247,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/app'
+    | '/paywall'
+    | '/app/checkin'
+    | '/app/debrief'
+    | '/app/insights'
+    | '/app/profile'
+    | '/app/today'
     | '/onboarding/age'
     | '/onboarding/analyzing'
     | '/onboarding/apps'
@@ -204,6 +274,13 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/app'
+    | '/paywall'
+    | '/app/checkin'
+    | '/app/debrief'
+    | '/app/insights'
+    | '/app/profile'
+    | '/app/today'
     | '/onboarding/age'
     | '/onboarding/analyzing'
     | '/onboarding/apps'
@@ -224,6 +301,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/app'
+    | '/paywall'
+    | '/app/checkin'
+    | '/app/debrief'
+    | '/app/insights'
+    | '/app/profile'
+    | '/app/today'
     | '/onboarding/age'
     | '/onboarding/analyzing'
     | '/onboarding/apps'
@@ -245,6 +329,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  PaywallRoute: typeof PaywallRoute
   OnboardingAgeRoute: typeof OnboardingAgeRoute
   OnboardingAnalyzingRoute: typeof OnboardingAnalyzingRoute
   OnboardingAppsRoute: typeof OnboardingAppsRoute
@@ -266,6 +352,20 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/paywall': {
+      id: '/paywall'
+      path: '/paywall'
+      fullPath: '/paywall'
+      preLoaderRoute: typeof PaywallRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -392,11 +492,66 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingAgeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/today': {
+      id: '/app/today'
+      path: '/today'
+      fullPath: '/app/today'
+      preLoaderRoute: typeof AppTodayRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/profile': {
+      id: '/app/profile'
+      path: '/profile'
+      fullPath: '/app/profile'
+      preLoaderRoute: typeof AppProfileRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/insights': {
+      id: '/app/insights'
+      path: '/insights'
+      fullPath: '/app/insights'
+      preLoaderRoute: typeof AppInsightsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/debrief': {
+      id: '/app/debrief'
+      path: '/debrief'
+      fullPath: '/app/debrief'
+      preLoaderRoute: typeof AppDebriefRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/checkin': {
+      id: '/app/checkin'
+      path: '/checkin'
+      fullPath: '/app/checkin'
+      preLoaderRoute: typeof AppCheckinRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppCheckinRoute: typeof AppCheckinRoute
+  AppDebriefRoute: typeof AppDebriefRoute
+  AppInsightsRoute: typeof AppInsightsRoute
+  AppProfileRoute: typeof AppProfileRoute
+  AppTodayRoute: typeof AppTodayRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppCheckinRoute: AppCheckinRoute,
+  AppDebriefRoute: AppDebriefRoute,
+  AppInsightsRoute: AppInsightsRoute,
+  AppProfileRoute: AppProfileRoute,
+  AppTodayRoute: AppTodayRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  PaywallRoute: PaywallRoute,
   OnboardingAgeRoute: OnboardingAgeRoute,
   OnboardingAnalyzingRoute: OnboardingAnalyzingRoute,
   OnboardingAppsRoute: OnboardingAppsRoute,
