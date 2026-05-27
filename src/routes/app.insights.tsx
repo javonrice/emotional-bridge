@@ -1,13 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { Apple, Sparkles } from "lucide-react";
+import { toPng } from "html-to-image";
+import { Apple, Share2, Sparkles } from "lucide-react";
 import { getCheckinStats } from "@/lib/checkins.functions";
+import { generateMonthlyReport } from "@/lib/ai.functions";
 import { IosWaitlistSheet } from "@/components/ios/ComingSoonBadge";
 import { useEntitlements } from "@/hooks/useEntitlements";
 import { useOnboarding } from "@/lib/onboarding-store";
+import { track } from "@/lib/analytics.functions";
 
 type Tab = "gateway" | "loop" | "monthly";
 
@@ -30,10 +33,18 @@ function Insights() {
   const { answers } = useOnboarding();
   const selfReportedApps: string[] = Array.isArray(answers.apps) ? answers.apps : [];
   const statsFn = useServerFn(getCheckinStats);
+  const monthlyFn = useServerFn(generateMonthlyReport);
   const tzOffset = typeof window !== "undefined" ? new Date().getTimezoneOffset() : 0;
   const { data: stats } = useQuery({
     queryKey: ["checkin-stats", tzOffset],
     queryFn: () => statsFn({ data: { tz_offset_minutes: tzOffset } }),
+  });
+  const totalForReport = stats?.total ?? 0;
+  const { data: monthly } = useQuery({
+    queryKey: ["monthly-report", tzOffset],
+    queryFn: () => monthlyFn({ data: { tz_offset_minutes: tzOffset } }),
+    enabled: tab === "monthly" && totalForReport >= 30,
+    staleTime: 1000 * 60 * 60,
   });
 
   const total = stats?.total ?? 0;
@@ -165,18 +176,32 @@ function Insights() {
                   Start your first check-in
                 </Link>
               </div>
+            ) : total < 30 ? (
+              <>
+                <div className="mb-3 rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 text-xs text-muted-foreground">
+                  Full monthly report unlocks at 30 check-ins · {30 - total} to go.
+                </div>
+                <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 no-scrollbar">
+                  <MonthlyCard title="The month" hero={String(daysCount)} sub={`days of awareness · ${streak}-day streak`} />
+                  {topEmotion && (
+                    <MonthlyCard
+                      title="Most loud"
+                      hero={topEmotion.label.charAt(0).toUpperCase() + topEmotion.label.slice(1)}
+                      sub={`${topEmotionShare}% of your check-ins`}
+                    />
+                  )}
+                  <MonthlyCard title="Check-ins" hero={String(total)} sub="moments you stopped to notice" />
+                </div>
+              </>
             ) : (
-              <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 no-scrollbar">
-                <MonthlyCard title="The month" hero={String(daysCount)} sub={`days of awareness · ${streak}-day streak`} />
-                {topEmotion && (
-                  <MonthlyCard
-                    title="Most loud"
-                    hero={topEmotion.label.charAt(0).toUpperCase() + topEmotion.label.slice(1)}
-                    sub={`${topEmotionShare}% of your check-ins`}
-                  />
-                )}
-                <MonthlyCard title="Check-ins" hero={String(total)} sub="moments you stopped to notice" />
-              </div>
+              <MonthlyReport
+                report={(monthly?.report ?? null) as MonthlyReportRow | null}
+                loading={!monthly}
+                fallbackTopEmotion={topEmotion?.label}
+                fallbackTopShare={topEmotionShare}
+                fallbackDays={daysCount}
+                fallbackStreak={streak}
+              />
             )}
           </motion.section>
         )}
@@ -194,6 +219,114 @@ function MonthlyCard({ title, hero, sub, small }: { title: string; hero: string;
       <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{title}</div>
       <div className={`mt-3 font-bold leading-tight text-primary text-glow ${small ? "text-2xl" : "text-[44px]"}`}>{hero}</div>
       <div className="absolute bottom-5 left-5 right-5 text-sm text-muted-foreground">{sub}</div>
+    </div>
+  );
+}
+
+type MonthlyReportRow = {
+  id: string;
+  the_number: number;
+  most_loud: string | null;
+  pattern: string | null;
+  top_gateway: string | null;
+  the_shift: string | null;
+};
+
+function MonthlyReport({
+  report,
+  loading,
+  fallbackTopEmotion,
+  fallbackTopShare,
+  fallbackDays,
+  fallbackStreak,
+}: {
+  report: MonthlyReportRow | null;
+  loading: boolean;
+  fallbackTopEmotion?: string;
+  fallbackTopShare: number;
+  fallbackDays: number;
+  fallbackStreak: number;
+}) {
+  const stripRef = useRef<HTMLDivElement | null>(null);
+  const [sharing, setSharing] = useState(false);
+
+  if (loading || !report) {
+    return (
+      <div className="flex h-[280px] items-center justify-center rounded-3xl border border-white/8 bg-card text-sm text-muted-foreground">
+        Building your monthly report…
+      </div>
+    );
+  }
+
+  const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "—");
+  const cards: { title: string; hero: string; sub: string; small?: boolean }[] = [
+    { title: "The number", hero: String(report.the_number), sub: `check-ins this month · ${fallbackStreak}-day streak` },
+    {
+      title: "Most loud",
+      hero: cap(report.most_loud ?? fallbackTopEmotion ?? ""),
+      sub: fallbackTopShare ? `${fallbackTopShare}% of your check-ins` : "your most-named feeling",
+    },
+    { title: "Your pattern", hero: report.pattern ?? "Pattern forming.", sub: `${fallbackDays} days of awareness`, small: true },
+    { title: "Top gateway", hero: cap(report.top_gateway ?? ""), sub: "the activity around your loop" },
+    { title: "The shift", hero: report.the_shift ?? "Steady awareness.", sub: "across 30 days", small: true },
+  ];
+
+  const exportNode = async (node: HTMLElement, filename: string, title: string) => {
+    const dataUrl = await toPng(node, { cacheBust: true, pixelRatio: 2, backgroundColor: "#0A0A0F" });
+    const blob = await (await fetch(dataUrl)).blob();
+    const file = new File([blob], filename, { type: "image/png" });
+    const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+    if (nav.canShare?.({ files: [file] }) && navigator.share) {
+      await navigator.share({ files: [file], title });
+    } else {
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = filename;
+      a.click();
+    }
+  };
+
+  const handleShareAll = async () => {
+    if (!stripRef.current) return;
+    setSharing(true);
+    try {
+      void track("monthly.share_all", { id: report.id });
+      await exportNode(stripRef.current, "loop-monthly.png", "My LOOP month");
+    } catch { /* swallow */ } finally { setSharing(false); }
+  };
+
+  const handleShareOne = async (idx: number) => {
+    const el = stripRef.current?.children?.[idx] as HTMLElement | undefined;
+    if (!el) return;
+    try {
+      void track("monthly.share_card", { id: report.id, idx });
+      await exportNode(el, `loop-monthly-${idx}.png`, "LOOP");
+    } catch { /* swallow */ }
+  };
+
+  return (
+    <div>
+      <div ref={stripRef} className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 no-scrollbar">
+        {cards.map((c, i) => (
+          <div key={i} className="relative shrink-0 snap-center">
+            <MonthlyCard title={c.title} hero={c.hero} sub={c.sub} small={c.small} />
+            <button
+              onClick={() => handleShareOne(i)}
+              aria-label="Share card"
+              className="tap-scale absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-foreground backdrop-blur"
+            >
+              <Share2 size={12} />
+            </button>
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={handleShareAll}
+        disabled={sharing}
+        className="ios-pill tap-scale mt-2 flex h-12 w-full items-center justify-center gap-2 bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-50"
+      >
+        <Share2 size={14} /> {sharing ? "Preparing…" : "Share all 5 cards"}
+      </button>
     </div>
   );
 }
