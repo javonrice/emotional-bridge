@@ -26,6 +26,17 @@ export const generateLoop = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
+    // Per-user rate limit: max 3 loop generations per hour.
+    const sinceHour = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count: loopCount } = await supabase
+      .from("loops")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", sinceHour);
+    if ((loopCount ?? 0) >= 3) {
+      return { loop: null, error: "You've generated a few loops recently — give it an hour and try again." };
+    }
+
     const gateway = getGateway();
     const prompt = `You are LOOP — an emotional pattern intelligence tool, not therapy.
 
