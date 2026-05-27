@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./use-auth";
 import { useSubscription } from "./useSubscription";
@@ -9,7 +9,10 @@ export type Entitlements = {
   tier: "free" | "paid";
   isPaid: boolean;
   debriefsRemaining: number | null;
+  debriefsUsed: number | null;
+  freeLimit: number;
   loading: boolean;
+  refresh: () => void;
 };
 
 export function useEntitlements(): Entitlements {
@@ -17,6 +20,8 @@ export function useEntitlements(): Entitlements {
   const { isActive, loading: subLoading } = useSubscription();
   const [lifetimeCount, setLifetimeCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tick, setTick] = useState(0);
+  const refresh = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
     if (authLoading || subLoading) return;
@@ -39,16 +44,27 @@ export function useEntitlements(): Entitlements {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, authLoading, subLoading, isActive]);
+  }, [user?.id, authLoading, subLoading, isActive, tick]);
 
   if (isActive) {
-    return { tier: "paid", isPaid: true, debriefsRemaining: null, loading: subLoading || authLoading };
+    return {
+      tier: "paid",
+      isPaid: true,
+      debriefsRemaining: null,
+      debriefsUsed: null,
+      freeLimit: FREE_DEBRIEF_LIMIT,
+      loading: subLoading || authLoading,
+      refresh,
+    };
   }
   return {
     tier: "free",
     isPaid: false,
     debriefsRemaining:
       lifetimeCount === null ? null : Math.max(0, FREE_DEBRIEF_LIMIT - lifetimeCount),
+    debriefsUsed: lifetimeCount,
+    freeLimit: FREE_DEBRIEF_LIMIT,
     loading,
+    refresh,
   };
 }

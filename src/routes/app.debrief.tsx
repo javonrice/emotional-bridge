@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Mic, Share2, Lock } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toPng } from "html-to-image";
 import { generateDebrief } from "@/lib/ai.functions";
 import { getDebriefHistory } from "@/lib/checkins.functions";
 import { AIFeedback } from "@/components/loop/AIFeedback";
@@ -11,6 +12,7 @@ import { CrisisBanner } from "@/components/safety/CrisisBanner";
 import { NotTherapyDisclaimer } from "@/components/safety/NotTherapyDisclaimer";
 import { detectRisk } from "@/lib/safety";
 import { track } from "@/lib/analytics.functions";
+import { useEntitlements } from "@/hooks/useEntitlements";
 
 export const Route = createFileRoute("/app/debrief")({
   component: Debrief,
@@ -29,6 +31,7 @@ function Debrief() {
   const submit = useServerFn(generateDebrief);
   const historyFn = useServerFn(getDebriefHistory);
   const qc = useQueryClient();
+  const ent = useEntitlements();
   const { data: history } = useQuery({
     queryKey: ["debrief-history"],
     queryFn: () => historyFn(),
@@ -38,6 +41,8 @@ function Debrief() {
   const [debrief, setDebrief] = useState<DebriefRow | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   const startVoice = () => {
     const SR =
@@ -83,10 +88,39 @@ function Debrief() {
       }
       setDebrief(res.debrief as DebriefRow);
       qc.invalidateQueries({ queryKey: ["debrief-history"] });
+      ent.refresh();
       setStage("card");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
       setStage("input");
+    }
+  };
+
+  const handleShare = async () => {
+    if (!cardRef.current) return;
+    setSharing(true);
+    try {
+      const dataUrl = await toPng(cardRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#0A0A0F",
+      });
+      void track("debrief.share", { id: debrief?.id });
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], "loop-debrief.png", { type: "image/png" });
+      const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+      if (nav.canShare?.({ files: [file] }) && navigator.share) {
+        await navigator.share({ files: [file], title: "LOOP debrief" });
+      } else {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = "loop-debrief.png";
+        a.click();
+      }
+    } catch {
+      setError("Couldn't generate share card.");
+    } finally {
+      setSharing(false);
     }
   };
 
@@ -124,6 +158,22 @@ function Debrief() {
               Read it back to me
             </button>
 
+            {ent.tier === "free" && ent.debriefsRemaining !== null && (
+              <p className="mt-3 text-center text-[11px] text-muted-foreground">
+                {ent.debriefsRemaining > 0
+                  ? `${ent.debriefsRemaining} free debrief${ent.debriefsRemaining === 1 ? "" : "s"} remaining`
+                  : "You've used your free debriefs"}
+                {ent.debriefsRemaining <= 1 && (
+                  <>
+                    {" · "}
+                    <Link to="/paywall" search={{ source: "debrief_limit" }} className="text-primary underline-offset-2 hover:underline">
+                      Unlock unlimited
+                    </Link>
+                  </>
+                )}
+              </p>
+            )}
+
             {history?.items && history.items.length > 0 && (
               <div className="mt-10">
                 <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Past debriefs</div>
@@ -156,7 +206,7 @@ function Debrief() {
 
         {stage === "card" && debrief && (
           <motion.div key="c" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
-            <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-[#0A0A0F] to-[#1A1540] p-6">
+            <div ref={cardRef} className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-[#0A0A0F] to-[#1A1540] p-6">
               <div className="absolute right-4 top-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">LOOP</div>
               <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Debrief · today</div>
 
@@ -169,13 +219,35 @@ function Debrief() {
               <div className="mt-5 text-xs uppercase tracking-[0.16em] text-muted-foreground">Try next time</div>
               <p className="mt-2 text-[15px] leading-relaxed text-primary">{debrief.micro_action}</p>
 
-              <div className="mt-6 flex items-center justify-between border-t border-white/5 pt-4">
-                <div className="text-[11px] text-muted-foreground">Awareness logged</div>
-                <button className="tap-scale flex items-center gap-1.5 rounded-full bg-white/8 px-3 py-1.5 text-xs font-medium text-foreground opacity-60">
-                  <Share2 size={12} /> Save card · soon
-                </button>
+              <div className="mt-6 border-t border-white/5 pt-4 text-[11px] text-muted-foreground">
+                Awareness logged · seeyourloop.com
               </div>
             </div>
+
+            <button
+              onClick={handleShare}
+              disabled={sharing}
+              className="tap-scale mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-white/8 px-4 py-2.5 text-xs font-medium text-foreground disabled:opacity-50"
+            >
+              <Share2 size={14} /> {sharing ? "Preparing…" : "Share this insight"}
+            </button>
+
+            {ent.tier === "free" && ent.debriefsRemaining !== null && (
+              <p className="mt-3 text-center text-[11px] text-muted-foreground">
+                {ent.debriefsRemaining > 0
+                  ? `${ent.debriefsRemaining} free debrief${ent.debriefsRemaining === 1 ? "" : "s"} remaining`
+                  : "That was your last free debrief"}
+                {ent.debriefsRemaining <= 1 && (
+                  <>
+                    {" · "}
+                    <Link to="/paywall" search={{ source: "debrief_limit" }} className="text-primary underline-offset-2 hover:underline">
+                      Unlock unlimited
+                    </Link>
+                  </>
+                )}
+              </p>
+            )}
+
             <NotTherapyDisclaimer />
             <AIFeedback surface="debrief_card" sourceId={debrief.id} />
 
