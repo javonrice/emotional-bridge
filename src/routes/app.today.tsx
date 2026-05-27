@@ -2,7 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { ChevronRight, Sparkles } from "lucide-react";
-import { deriveLoopName, useOnboarding, useStreak } from "@/lib/onboarding-store";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
+import { getCheckinStats } from "@/lib/checkins.functions";
+import { getCurrentLoop } from "@/lib/auth.functions";
+import { deriveLoopName, useOnboarding } from "@/lib/onboarding-store";
 
 export const Route = createFileRoute("/app/today")({
   component: Today,
@@ -11,7 +15,7 @@ export const Route = createFileRoute("/app/today")({
 function StreakRing({ value }: { value: number }) {
   const r = 92;
   const c = 2 * Math.PI * r;
-  const pct = (value % 30) / 30;
+  const pct = value === 0 ? 0.04 : (value % 30) / 30 || 1;
   return (
     <div className="relative h-[220px] w-[220px]">
       <svg viewBox="0 0 220 220" className="h-full w-full -rotate-90">
@@ -41,8 +45,23 @@ function StreakRing({ value }: { value: number }) {
 
 function Today() {
   const { answers } = useOnboarding();
-  const { streak } = useStreak();
-  const loopName = deriveLoopName(answers);
+  const statsFn = useServerFn(getCheckinStats);
+  const loopFn = useServerFn(getCurrentLoop);
+  const tzOffset = typeof window !== "undefined" ? new Date().getTimezoneOffset() : 0;
+
+  const { data: stats } = useQuery({
+    queryKey: ["checkin-stats", tzOffset],
+    queryFn: () => statsFn({ data: { tz_offset_minutes: tzOffset } }),
+  });
+  const { data: loopRes } = useQuery({
+    queryKey: ["current-loop"],
+    queryFn: () => loopFn(),
+  });
+
+  const streak = stats?.streak ?? 0;
+  const loop = loopRes?.loop;
+  const loopName = loop?.name ?? deriveLoopName(answers);
+
   const [greeting, setGreeting] = useState("Hello");
   useEffect(() => {
     const h = new Date().getHours();
@@ -77,7 +96,9 @@ function Today() {
         <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Your loop</div>
         <div className="mt-1 text-lg font-semibold text-primary">{loopName}</div>
         <p className="mt-2 text-sm text-muted-foreground">
-          Tonight looks like a soft drift window based on last week's pattern. Heads up — not an alarm.
+          {loop?.summary
+            ? loop.summary
+            : "Tonight looks like a soft drift window based on last week's pattern. Heads up — not an alarm."}
         </p>
       </div>
 

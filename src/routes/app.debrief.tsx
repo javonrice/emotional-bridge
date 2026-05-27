@@ -3,7 +3,9 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Mic, Share2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { generateDebrief } from "@/lib/ai.functions";
+import { getDebriefHistory } from "@/lib/checkins.functions";
 import { AIFeedback } from "@/components/loop/AIFeedback";
 
 export const Route = createFileRoute("/app/debrief")({
@@ -20,6 +22,12 @@ type DebriefRow = {
 
 function Debrief() {
   const submit = useServerFn(generateDebrief);
+  const historyFn = useServerFn(getDebriefHistory);
+  const qc = useQueryClient();
+  const { data: history } = useQuery({
+    queryKey: ["debrief-history"],
+    queryFn: () => historyFn(),
+  });
   const [stage, setStage] = useState<Stage>("input");
   const [text, setText] = useState("");
   const [debrief, setDebrief] = useState<DebriefRow | null>(null);
@@ -61,6 +69,7 @@ function Debrief() {
         return;
       }
       setDebrief(res.debrief as DebriefRow);
+      qc.invalidateQueries({ queryKey: ["debrief-history"] });
       setStage("card");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
@@ -97,6 +106,23 @@ function Debrief() {
             >
               Read it back to me
             </button>
+
+            {history?.items && history.items.length > 0 && (
+              <div className="mt-10">
+                <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Past debriefs</div>
+                <ul className="mt-3 space-y-2">
+                  {history.items.map((it) => (
+                    <li key={it.id} className="rounded-2xl border border-white/8 bg-card p-4">
+                      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                        {new Date(it.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                      </div>
+                      {it.pattern && <div className="mt-1 text-sm font-medium text-foreground/90">{it.pattern}</div>}
+                      {it.micro_action && <div className="mt-1 text-xs text-primary">{it.micro_action}</div>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </motion.div>
         )}
 
