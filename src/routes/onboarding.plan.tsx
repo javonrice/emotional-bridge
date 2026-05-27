@@ -58,7 +58,7 @@ function Plan() {
           );
         })}
       </div>
-      <PrimaryButton onClick={() => nav({ to: "/paywall" })}>
+      <PrimaryButton onClick={() => nav({ to: "/paywall", search: { source: "onboarding" } })}>
         {done >= STEPS.length ? "Your plan is ready" : "Preparing…"}
       </PrimaryButton>
     </ScreenShell>
