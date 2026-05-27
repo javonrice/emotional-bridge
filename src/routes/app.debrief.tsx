@@ -88,10 +88,39 @@ function Debrief() {
       }
       setDebrief(res.debrief as DebriefRow);
       qc.invalidateQueries({ queryKey: ["debrief-history"] });
+      ent.refresh();
       setStage("card");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
       setStage("input");
+    }
+  };
+
+  const handleShare = async () => {
+    if (!cardRef.current) return;
+    setSharing(true);
+    try {
+      const dataUrl = await toPng(cardRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#0A0A0F",
+      });
+      void track("debrief.share", { id: debrief?.id });
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], "loop-debrief.png", { type: "image/png" });
+      const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+      if (nav.canShare?.({ files: [file] }) && navigator.share) {
+        await navigator.share({ files: [file], title: "LOOP debrief" });
+      } else {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = "loop-debrief.png";
+        a.click();
+      }
+    } catch {
+      setError("Couldn't generate share card.");
+    } finally {
+      setSharing(false);
     }
   };
 
