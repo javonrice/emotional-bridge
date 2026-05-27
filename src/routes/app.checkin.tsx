@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { Check } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { saveCheckin } from "@/lib/checkins.functions";
+import { track } from "@/lib/analytics.functions";
+
 
 export const Route = createFileRoute("/app/checkin")({
   component: CheckIn,
@@ -43,11 +45,13 @@ function CheckIn() {
         },
       });
       if (!res.ok) setError(res.error ?? "Could not save check-in.");
+      else void track("checkin.save", { emotion: next.emotion, energy: next.energy });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save check-in.");
     }
     setDone(true);
   };
+
 
   if (done) {
     return (

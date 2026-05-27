@@ -9,8 +9,10 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { ConsentBanner } from "@/components/legal/ConsentBanner";
 
 import appCss from "../styles.css?url";
+
 
 function NotFoundComponent() {
   return (
@@ -100,9 +102,13 @@ function RootComponent() {
   }, [router, queryClient]);
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="mx-auto min-h-screen w-full max-w-[430px] bg-background">
-        <Outlet />
+      <div className="mx-auto min-h-dvh w-full max-w-[430px] bg-background">
+        <main id="main">
+          <Outlet />
+        </main>
+        <ConsentBanner />
       </div>
     </QueryClientProvider>
   );
 }
+

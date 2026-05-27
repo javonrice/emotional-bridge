@@ -9,9 +9,11 @@ import { migrateLocalAnswers } from "@/lib/auth.functions";
 import { useOnboarding } from "@/lib/onboarding-store";
 
 export const Route = createFileRoute("/login")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
   validateSearch: (s: Record<string, unknown>) => ({ redirect: (s.redirect as string) || "/app/today" }),
   component: Login,
 });
+
 
 function Login() {
   const nav = useNavigate();
