@@ -33,10 +33,18 @@ function Insights() {
   const { answers } = useOnboarding();
   const selfReportedApps: string[] = Array.isArray(answers.apps) ? answers.apps : [];
   const statsFn = useServerFn(getCheckinStats);
+  const monthlyFn = useServerFn(generateMonthlyReport);
   const tzOffset = typeof window !== "undefined" ? new Date().getTimezoneOffset() : 0;
   const { data: stats } = useQuery({
     queryKey: ["checkin-stats", tzOffset],
     queryFn: () => statsFn({ data: { tz_offset_minutes: tzOffset } }),
+  });
+  const totalForReport = stats?.total ?? 0;
+  const { data: monthly } = useQuery({
+    queryKey: ["monthly-report", tzOffset],
+    queryFn: () => monthlyFn({ data: { tz_offset_minutes: tzOffset } }),
+    enabled: tab === "monthly" && totalForReport >= 30,
+    staleTime: 1000 * 60 * 60,
   });
 
   const total = stats?.total ?? 0;
