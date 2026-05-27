@@ -7,10 +7,13 @@ import { deriveLoopName, useOnboarding } from "@/lib/onboarding-store";
 import { useAuth } from "@/hooks/use-auth";
 import { getCurrentLoop } from "@/lib/auth.functions";
 import { AIFeedback } from "@/components/loop/AIFeedback";
+import { NotTherapyDisclaimer } from "@/components/safety/NotTherapyDisclaimer";
 
 export const Route = createFileRoute("/onboarding/loop")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
   component: LoopReveal,
 });
+
 
 function LoopReveal() {
   const { answers } = useOnboarding();
@@ -72,7 +75,9 @@ function LoopReveal() {
           <p className="mt-2 text-[15px] leading-relaxed text-foreground/90">{summary}</p>
 
           {serverLoop?.id && <AIFeedback surface="loop_card" sourceId={serverLoop.id} />}
+          <NotTherapyDisclaimer />
         </motion.div>
+
 
         <motion.p
           initial={{ opacity: 0 }}
