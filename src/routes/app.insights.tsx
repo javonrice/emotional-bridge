@@ -83,10 +83,14 @@ function Insights() {
           <motion.section key="l" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5">
             <div className="overflow-hidden rounded-3xl border border-white/8 bg-card p-4">
               {stats && stats.total >= 3 ? (
-                <LoopMap
-                  emotions={stats.emotions}
-                  edges={stats.edges}
-                />
+                <>
+                  {stats.total < 14 && (
+                    <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-primary">
+                      Early sketch · gets sharper after 14 check-ins
+                    </div>
+                  )}
+                  <LoopMap emotions={stats.emotions} edges={stats.edges} />
+                </>
               ) : (
                 <div className="flex h-[320px] flex-col items-center justify-center px-6 text-center">
                   <div className="text-sm font-medium text-foreground/80">Your map is still drawing.</div>
