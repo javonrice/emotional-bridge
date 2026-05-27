@@ -1,13 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { Apple, Sparkles } from "lucide-react";
+import { toPng } from "html-to-image";
+import { Apple, Share2, Sparkles } from "lucide-react";
 import { getCheckinStats } from "@/lib/checkins.functions";
+import { generateMonthlyReport } from "@/lib/ai.functions";
 import { IosWaitlistSheet } from "@/components/ios/ComingSoonBadge";
 import { useEntitlements } from "@/hooks/useEntitlements";
 import { useOnboarding } from "@/lib/onboarding-store";
+import { track } from "@/lib/analytics.functions";
 
 type Tab = "gateway" | "loop" | "monthly";
 
