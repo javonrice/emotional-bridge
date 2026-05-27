@@ -18,7 +18,7 @@ const QUOTES = [
   },
   {
     body: "I still relapse sometimes. But I see it coming now. That changes everything. Awareness really is the mechanism.",
-    name: "Daniel",
+    name: "Aisha",
     age: 24,
   },
 ];
@@ -26,7 +26,7 @@ const QUOTES = [
 function Proof() {
   return (
     <ScreenShell>
-      <Eyebrow>Other men who saw their loop</Eyebrow>
+      <Eyebrow>Others who saw their loop</Eyebrow>
       <H1>You're not the only one.</H1>
       <div className="mt-6 flex-1 space-y-3">
         {QUOTES.map((q) => (
