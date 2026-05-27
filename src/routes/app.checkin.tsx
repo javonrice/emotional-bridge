@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { saveCheckin, getCheckinStats } from "@/lib/checkins.functions";
 import { track } from "@/lib/analytics.functions";
+import { MilestoneSheet } from "@/components/loop/MilestoneSheet";
 
 
 export const Route = createFileRoute("/app/checkin")({
@@ -81,6 +82,24 @@ function CheckIn() {
     const streak = stats?.streak ?? 0;
     const milestone = milestoneFor(streak);
     const isDayOne = streak === 1;
+    const isFullScreen = streak === 7 || streak === 14 || streak === 30;
+    const topEmotion = stats?.emotions?.[0]?.label;
+
+    if (isFullScreen && stats) {
+      return (
+        <MilestoneSheet
+          kind={streak as 7 | 14 | 30}
+          streak={streak}
+          total={stats.total ?? 0}
+          topEmotion={topEmotion}
+          onContinue={() => {
+            if (streak === 14) nav({ to: "/app/insights", search: { tab: "loop" } });
+            else nav({ to: "/app/today" });
+          }}
+        />
+      );
+    }
+
 
     return (
       <div className="safe-top flex min-h-[80vh] flex-col items-center justify-center px-6 text-center">

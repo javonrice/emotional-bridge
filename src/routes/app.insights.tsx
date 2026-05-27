@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
@@ -9,14 +9,22 @@ import { IosWaitlistSheet } from "@/components/ios/ComingSoonBadge";
 import { useEntitlements } from "@/hooks/useEntitlements";
 import { useOnboarding } from "@/lib/onboarding-store";
 
+type Tab = "gateway" | "loop" | "monthly";
+
 export const Route = createFileRoute("/app/insights")({
+  validateSearch: (search: Record<string, unknown>): { tab?: Tab } => {
+    const t = search.tab;
+    return t === "gateway" || t === "loop" || t === "monthly" ? { tab: t } : {};
+  },
   component: Insights,
 });
 
-type Tab = "gateway" | "loop" | "monthly";
-
 function Insights() {
-  const [tab, setTab] = useState<Tab>("gateway");
+  const { tab: initialTab } = Route.useSearch();
+  const [tab, setTab] = useState<Tab>(initialTab ?? "gateway");
+  useEffect(() => {
+    if (initialTab) setTab(initialTab);
+  }, [initialTab]);
   const [waitlist, setWaitlist] = useState(false);
   const { tier } = useEntitlements();
   const { answers } = useOnboarding();
@@ -115,8 +123,21 @@ function Insights() {
                 <div className="flex h-[320px] flex-col items-center justify-center px-6 text-center">
                   <div className="text-sm font-medium text-foreground/80">Your map is still drawing.</div>
                   <p className="mt-2 max-w-xs text-xs text-muted-foreground">
-                    Log a few more check-ins. Once we see 3+ transitions between feelings, the loop appears here.
+                    Once you log 3+ transitions between feelings, the loop appears here.
                   </p>
+                  <div className="mt-5 w-full max-w-[180px]">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/8">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(100, ((stats?.total ?? 0) / 3) * 100)}%` }}
+                        transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
+                        className="h-full rounded-full bg-primary"
+                      />
+                    </div>
+                    <div className="mt-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {Math.min(stats?.total ?? 0, 3)} of 3 check-ins
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
