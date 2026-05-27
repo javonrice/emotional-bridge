@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ChevronRight, Bell, Lock, CreditCard, LogOut, RotateCcw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { deriveLoopName, resetOnboarding, useOnboarding, useStreak } from "@/lib/onboarding-store";
 
 export const Route = createFileRoute("/app/profile")({
@@ -15,6 +16,11 @@ function Profile() {
   const restart = () => {
     resetOnboarding();
     nav({ to: "/onboarding/welcome" });
+  };
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    resetOnboarding();
+    nav({ to: "/login" });
   };
 
   return (
@@ -37,7 +43,7 @@ function Profile() {
         <Row icon={Lock} label="Privacy & data" />
         <Row icon={CreditCard} label="Manage subscription" detail="Annual" />
         <Row icon={RotateCcw} label="Restart onboarding (dev)" onClick={restart} />
-        <Row icon={LogOut} label="Sign out" last />
+        <Row icon={LogOut} label="Sign out" onClick={signOut} last />
       </div>
 
       <p className="mt-6 text-center text-[11px] text-muted-foreground/60">LOOP · prototype build · v0.1</p>
