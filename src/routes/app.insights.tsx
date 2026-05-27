@@ -3,9 +3,11 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
+import { Apple, Sparkles } from "lucide-react";
 import { getCheckinStats } from "@/lib/checkins.functions";
-import { ComingSoonBadge } from "@/components/ios/ComingSoonBadge";
+import { IosWaitlistSheet } from "@/components/ios/ComingSoonBadge";
 import { useEntitlements } from "@/hooks/useEntitlements";
+import { useOnboarding } from "@/lib/onboarding-store";
 
 export const Route = createFileRoute("/app/insights")({
   component: Insights,
@@ -13,23 +15,25 @@ export const Route = createFileRoute("/app/insights")({
 
 type Tab = "gateway" | "loop" | "monthly";
 
-const APPS = [
-  { name: "Instagram", pct: 92 },
-  { name: "Reddit", pct: 71 },
-  { name: "X / Twitter", pct: 58 },
-  { name: "TikTok", pct: 44 },
-  { name: "YouTube", pct: 31 },
-];
-
 function Insights() {
   const [tab, setTab] = useState<Tab>("gateway");
+  const [waitlist, setWaitlist] = useState(false);
   const { tier } = useEntitlements();
+  const { answers } = useOnboarding();
+  const selfReportedApps: string[] = Array.isArray(answers.apps) ? answers.apps : [];
   const statsFn = useServerFn(getCheckinStats);
   const tzOffset = typeof window !== "undefined" ? new Date().getTimezoneOffset() : 0;
   const { data: stats } = useQuery({
     queryKey: ["checkin-stats", tzOffset],
     queryFn: () => statsFn({ data: { tz_offset_minutes: tzOffset } }),
   });
+
+  const total = stats?.total ?? 0;
+  const daysCount = stats?.days?.length ?? 0;
+  const streak = stats?.streak ?? 0;
+  const topEmotion = stats?.emotions?.[0];
+  const topEmotionShare =
+    total > 0 && topEmotion ? Math.round((topEmotion.count / total) * 100) : 0;
 
   return (
     <div className="safe-top px-6 pb-4">
@@ -51,33 +55,38 @@ function Insights() {
       <AnimatePresence mode="wait">
         {tab === "gateway" && (
           <motion.section key="g" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5">
-            <div className="rounded-3xl border border-white/8 bg-gradient-to-br from-[#0A0A0F] to-[#1A1540] p-6">
-              <div className="flex items-center justify-between">
-                <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Your gateway apps</div>
-                <ComingSoonBadge source="insights_gateway" label="Auto-detect · iOS soon" />
+            <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-[#0A0A0F] to-[#1A1540] p-6">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                <Apple size={13} className="text-primary" /> Auto-detect · iOS
               </div>
-              <div className="mt-2 text-2xl font-bold">Your #1 gateway: <span className="text-primary">Instagram</span></div>
-              <div className="mt-6 space-y-4">
-                {APPS.map((a, i) => (
-                  <div key={a.name}>
-                    <div className="flex items-baseline justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg font-bold text-primary">#{i + 1}</span>
-                        <span className="text-[15px] font-medium">{a.name}</span>
-                      </div>
-                      <span className="text-xs font-medium text-muted-foreground">{a.pct}% correlation</span>
-                    </div>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/8">
-                      <motion.div
-                        initial={{ width: 0 }} animate={{ width: `${a.pct}%` }} transition={{ delay: i * 0.08, duration: 0.8 }}
-                        className="h-full rounded-full bg-primary"
-                      />
-                    </div>
-                  </div>
-                ))}
+              <div className="mt-3 text-[22px] font-bold leading-tight">
+                Your real gateway apps light up here — once iOS auto-tracking ships.
               </div>
-              <p className="mt-6 text-[11px] text-muted-foreground/70">For now, based on what you told us. iOS auto-detection coming soon.</p>
+              <p className="mt-3 text-sm text-muted-foreground">
+                We'll read your Screen Time on-device and pinpoint exactly which app opens your loop, with no typing. Today, self-report only captures what you remember.
+              </p>
+              <button
+                onClick={() => setWaitlist(true)}
+                className="ios-pill tap-scale mt-5 flex h-12 w-full items-center justify-center bg-primary text-sm font-semibold text-primary-foreground"
+              >
+                Notify me when it ships
+              </button>
+              <p className="mt-2 text-center text-[11px] text-muted-foreground/70">No spam. One email when it goes live.</p>
             </div>
+
+            {selfReportedApps.length > 0 && (
+              <div className="mt-4 rounded-3xl border border-white/8 bg-card p-5">
+                <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Apps you flagged</div>
+                <p className="mt-1 text-xs text-muted-foreground/80">From your onboarding — not measured, just remembered.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {selfReportedApps.map((a) => (
+                    <span key={a} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-foreground/90">
+                      {a}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </motion.section>
         )}
 
@@ -119,19 +128,43 @@ function Insights() {
 
         {tab === "monthly" && (
           <motion.section key="m" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5">
-            <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 no-scrollbar">
-              <MonthlyCard title="The month" hero="23" sub="days of awareness · longest streak ever" />
-              <MonthlyCard title="Most loud" hero="Lonely" sub="38% of your check-ins this month" />
-              <MonthlyCard title="Your pattern" hero="Late Night Lonely Spiral" sub="trigger → app → loop" small />
-              <MonthlyCard title="Top gateway" hero="Instagram" sub="92% correlation with drift" />
-              <MonthlyCard title="The shift" hero="↓ 41%" sub="urges, last 15 days vs first 15" />
-            </div>
+            {total === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-3xl border border-white/8 bg-card px-6 py-12 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <Sparkles size={22} />
+                </div>
+                <div className="mt-4 text-base font-semibold">Your month hasn't started yet</div>
+                <p className="mt-2 max-w-xs text-sm text-muted-foreground">
+                  Log your first check-in. Your monthly cards build themselves from there.
+                </p>
+                <Link
+                  to="/app/checkin"
+                  className="ios-pill tap-scale mt-5 inline-flex h-11 items-center justify-center bg-primary px-6 text-sm font-semibold text-primary-foreground"
+                >
+                  Start your first check-in
+                </Link>
+              </div>
+            ) : (
+              <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 no-scrollbar">
+                <MonthlyCard title="The month" hero={String(daysCount)} sub={`days of awareness · ${streak}-day streak`} />
+                {topEmotion && (
+                  <MonthlyCard
+                    title="Most loud"
+                    hero={topEmotion.label.charAt(0).toUpperCase() + topEmotion.label.slice(1)}
+                    sub={`${topEmotionShare}% of your check-ins`}
+                  />
+                )}
+                <MonthlyCard title="Check-ins" hero={String(total)} sub="moments you stopped to notice" />
+              </div>
+            )}
           </motion.section>
         )}
       </AnimatePresence>
+      <IosWaitlistSheet open={waitlist} onClose={() => setWaitlist(false)} source="insights_gateway" />
     </div>
   );
 }
+
 
 function MonthlyCard({ title, hero, sub, small }: { title: string; hero: string; sub: string; small?: boolean }) {
   return (
