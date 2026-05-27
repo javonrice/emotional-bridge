@@ -18,8 +18,8 @@ function Commit() {
         </p>
       </div>
       <div className="space-y-3">
-        <PrimaryButton to="/onboarding/plan">Yes — show me everything</PrimaryButton>
-        <GhostButton to="/onboarding/plan">I want to keep going</GhostButton>
+        <PrimaryButton to="/login" search={{ redirect: "/onboarding/plan" }}>Yes — show me everything</PrimaryButton>
+        <GhostButton to="/login" search={{ redirect: "/onboarding/plan" }}>I want to keep going</GhostButton>
       </div>
     </ScreenShell>
   );
