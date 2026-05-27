@@ -18,7 +18,7 @@ function Welcome() {
       </div>
       <div className="w-full max-w-sm space-y-3">
         <Link
-          to="/onboarding/opener"
+          to="/onboarding/tracking-mode"
           className="ios-pill tap-scale flex h-14 w-full items-center justify-center bg-primary text-base font-semibold text-primary-foreground glow"
         >
           Begin
