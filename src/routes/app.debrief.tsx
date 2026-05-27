@@ -69,6 +69,7 @@ function Debrief() {
         return;
       }
       setDebrief(res.debrief as DebriefRow);
+      qc.invalidateQueries({ queryKey: ["debrief-history"] });
       setStage("card");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
