@@ -236,6 +236,48 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_reports: {
+        Row: {
+          created_at: string
+          id: string
+          model: string | null
+          most_loud: string | null
+          pattern: string | null
+          period_end: string
+          prompt_version: string | null
+          the_number: number
+          the_shift: string | null
+          top_gateway: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          model?: string | null
+          most_loud?: string | null
+          pattern?: string | null
+          period_end: string
+          prompt_version?: string | null
+          the_number?: number
+          the_shift?: string | null
+          top_gateway?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          model?: string | null
+          most_loud?: string | null
+          pattern?: string | null
+          period_end?: string
+          prompt_version?: string | null
+          the_number?: number
+          the_shift?: string | null
+          top_gateway?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       onboarding_answers: {
         Row: {
           age: string | null
