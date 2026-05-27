@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PaywallRouteImport } from './routes/paywall'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingWelcomeRouteImport } from './routes/onboarding.welcome'
@@ -38,6 +39,11 @@ import { Route as AppCheckinRouteImport } from './routes/app.checkin'
 const PaywallRoute = PaywallRouteImport.update({
   id: '/paywall',
   path: '/paywall',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -164,6 +170,7 @@ const AppCheckinRoute = AppCheckinRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
   '/paywall': typeof PaywallRoute
   '/app/checkin': typeof AppCheckinRoute
   '/app/debrief': typeof AppDebriefRoute
@@ -191,6 +198,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
   '/paywall': typeof PaywallRoute
   '/app/checkin': typeof AppCheckinRoute
   '/app/debrief': typeof AppDebriefRoute
@@ -219,6 +227,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
   '/paywall': typeof PaywallRoute
   '/app/checkin': typeof AppCheckinRoute
   '/app/debrief': typeof AppDebriefRoute
@@ -248,6 +257,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
+    | '/login'
     | '/paywall'
     | '/app/checkin'
     | '/app/debrief'
@@ -275,6 +285,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/app'
+    | '/login'
     | '/paywall'
     | '/app/checkin'
     | '/app/debrief'
@@ -302,6 +313,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/app'
+    | '/login'
     | '/paywall'
     | '/app/checkin'
     | '/app/debrief'
@@ -330,6 +342,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
   PaywallRoute: typeof PaywallRoute
   OnboardingAgeRoute: typeof OnboardingAgeRoute
   OnboardingAnalyzingRoute: typeof OnboardingAnalyzingRoute
@@ -357,6 +370,13 @@ declare module '@tanstack/react-router' {
       path: '/paywall'
       fullPath: '/paywall'
       preLoaderRoute: typeof PaywallRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -551,6 +571,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
   PaywallRoute: PaywallRoute,
   OnboardingAgeRoute: OnboardingAgeRoute,
   OnboardingAnalyzingRoute: OnboardingAnalyzingRoute,
