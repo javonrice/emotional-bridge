@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { ComingSoonBadge } from "@/components/ios/ComingSoonBadge";
 
 export const Route = createFileRoute("/app/insights")({
   component: Insights,
@@ -40,7 +41,10 @@ function Insights() {
         {tab === "gateway" && (
           <motion.section key="g" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5">
             <div className="rounded-3xl border border-white/8 bg-gradient-to-br from-[#0A0A0F] to-[#1A1540] p-6">
-              <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Your gateway apps</div>
+              <div className="flex items-center justify-between">
+                <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Your gateway apps</div>
+                <ComingSoonBadge source="insights_gateway" label="Auto-detect · iOS soon" />
+              </div>
               <div className="mt-2 text-2xl font-bold">Your #1 gateway: <span className="text-primary">Instagram</span></div>
               <div className="mt-6 space-y-4">
                 {APPS.map((a, i) => (
@@ -61,7 +65,7 @@ function Insights() {
                   </div>
                 ))}
               </div>
-              <p className="mt-6 text-[11px] text-muted-foreground/70">Based on 30 days of check-in data</p>
+              <p className="mt-6 text-[11px] text-muted-foreground/70">For now, based on what you told us. iOS auto-detection coming soon.</p>
             </div>
           </motion.section>
         )}

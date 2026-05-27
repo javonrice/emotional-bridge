@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, Bell, Lock, CreditCard, LogOut, RotateCcw } from "lucide-react";
+import { useState } from "react";
+import { ChevronRight, Bell, Lock, CreditCard, LogOut, RotateCcw, Apple } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { deriveLoopName, resetOnboarding, useOnboarding, useStreak } from "@/lib/onboarding-store";
+import { IosWaitlistSheet } from "@/components/ios/ComingSoonBadge";
 
 export const Route = createFileRoute("/app/profile")({
   component: Profile,
@@ -12,6 +14,7 @@ function Profile() {
   const { streak } = useStreak();
   const nav = useNavigate();
   const loopName = deriveLoopName(answers);
+  const [waitlist, setWaitlist] = useState(false);
 
   const restart = () => {
     resetOnboarding();
@@ -39,6 +42,7 @@ function Profile() {
       </div>
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-white/8 bg-card">
+        <Row icon={Apple} label="Connect iOS Screen Time" detail="Soon" onClick={() => setWaitlist(true)} accent />
         <Row icon={Bell} label="Drift alerts" detail="On" />
         <Row icon={Lock} label="Privacy & data" />
         <Row icon={CreditCard} label="Manage subscription" detail="Annual" />
@@ -47,6 +51,8 @@ function Profile() {
       </div>
 
       <p className="mt-6 text-center text-[11px] text-muted-foreground/60">LOOP · prototype build · v0.1</p>
+
+      <IosWaitlistSheet open={waitlist} onClose={() => setWaitlist(false)} source="profile_connect_ios" />
     </div>
   );
 }
@@ -60,14 +66,14 @@ function Stat({ n, label }: { n: number; label: string }) {
   );
 }
 
-function Row({ icon: Icon, label, detail, onClick, last }: { icon: React.ComponentType<{ size?: number; className?: string }>; label: string; detail?: string; onClick?: () => void; last?: boolean }) {
+function Row({ icon: Icon, label, detail, onClick, last, accent }: { icon: React.ComponentType<{ size?: number; className?: string }>; label: string; detail?: string; onClick?: () => void; last?: boolean; accent?: boolean }) {
   return (
     <button onClick={onClick} className={`tap-scale flex w-full items-center gap-4 px-4 py-4 text-left ${!last && "border-b border-white/5"}`}>
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-muted-foreground">
+      <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${accent ? "bg-primary/15 text-primary" : "bg-white/5 text-muted-foreground"}`}>
         <Icon size={18} />
       </span>
       <span className="flex-1 text-[15px] font-medium text-foreground">{label}</span>
-      {detail && <span className="text-xs text-muted-foreground">{detail}</span>}
+      {detail && <span className={`text-xs ${accent ? "text-primary" : "text-muted-foreground"}`}>{detail}</span>}
       <ChevronRight size={16} className="text-muted-foreground/60" />
     </button>
   );
