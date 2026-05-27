@@ -1,83 +1,48 @@
-## Pre-flight
-Approve the `payments--batch_create_product` batch (still pending) so `loop_annual`, `loop_monthly`, `loop_lifetime` lookup keys resolve in checkout before Item 3/4 are exercised end-to-end.
+## Problem
 
-Note on rate limiting: backend doesn't have first-class rate-limit primitives yet, so the implementation is an ad-hoc table count (same shape we already used on `generateLoop`). Acknowledged and proceeding per your request.
+Auth completes server-side but the UI never moves forward. Three distinct bugs are colliding:
 
-## Item 1 — Rate limit `generateDebrief`
-`src/lib/ai.functions.ts`: at the top of `generateDebrief.handler`, before the AI call:
-- Query `debriefs` where `user_id = auth.uid()` and `created_at > now() - interval '1 hour'`, head count.
-- If `count >= 3`, return `{ debrief: null, error: "You've hit your hourly limit. Try again in a bit." }`.
-- Runs for all users (paid included). Must execute BEFORE the free-tier check in Item 3.
+**1. Email signup for an existing email silently no-ops.**
+Auth logs show repeated `user_repeated_signup` events at `200 OK` for `javonhrice@gmail.com`. Supabase intentionally returns success **with no session** when an email is already registered (to prevent email enumeration). `login.tsx` shows no error, the `isAuthenticated` effect never fires, and the user sits on the form.
 
-## Item 2 — Global `PaymentTestModeBanner`
-`src/routes/__root.tsx`: import existing `PaymentTestModeBanner` and render it inside `RootComponent` at the top of the `max-w-[430px]` wrapper, above `<main>`. Existing component already no-ops on `pk_live_`. No new component.
+**2. Email signup for a brand-new email also returns no session.**
+Email confirmation is currently required (we never enabled auto-confirm). `signUp()` succeeds but `session` is null until the user clicks the confirmation email. The current UI shows nothing — no "check your email" state, no redirect — so it looks broken.
 
-## Item 3 — Free-tier gating
+**3. Google sign-in returns to `/login`, then sometimes bounces.**
+`redirect_uri` is `window.location.origin + "/login"`. After tokens are set, the effect navigates to `/app/today`. `app.tsx`'s `beforeLoad` calls `supabase.auth.getUser()` immediately — on a cold navigation the session can still be hydrating, `getUser()` returns null, and the guard redirects back to `/login`. That's the "loops back to sign in" symptom.
 
-**New hook `src/hooks/useEntitlements.ts`:**
-- Wraps `useSubscription()`.
-- Returns `{ tier: 'free' | 'paid', isPaid: boolean, debriefsRemaining: number | null }`.
-- Paid → `debriefsRemaining: null`.
-- Free → query lifetime debrief count for `auth.uid()` (head count, no env filter), compute `Math.max(0, 3 - count)`. Cache via react-query keyed `['entitlements', userId]`; invalidate after each successful debrief.
+## Fix — standard iOS app pattern
 
-**Server-side gate in `generateDebrief` (after Item 1's hourly check):**
-- Look up subscription row for `auth.uid()` with `environment = current env` and active status (same predicate as `has_active_subscription`).
-- If not paid AND lifetime `debriefs` count for user `>= 3`, return `{ debrief: null, error: "PAYWALL", upgradeRequired: true }`.
+### A. Auth configuration
+- Enable **auto-confirm email signups** (`auto_confirm_email: true`) so a brand-new email signup returns a session immediately and goes straight into the app, like Instagram/Threads/etc.
+- Keep Google + email/password, leaked-password protection stays on.
 
-**`src/routes/app.debrief.tsx`:**
-- When server returns `upgradeRequired: true`, switch the `card` stage to a soft paywall card instead of redirecting.
-- Copy (exact): heading "You've used your 3 free debriefs", body "Unlock unlimited debriefs, your full Loop Map, and monthly pattern reports."
-- Primary CTA "Unlock LOOP · $14.99/mo" → `/paywall?source=debrief_limit`.
-- Secondary "Maybe later" → dismisses card back to input stage.
+### B. `src/routes/login.tsx`
+- **Detect "user already exists" on signup.** After `signUp()`, if `data.user && !data.session && data.user.identities?.length === 0`, show an inline message: "An account with this email already exists — sign in instead." and auto-flip `mode` to `"signin"` with email prefilled.
+- **Surface real errors** from both signUp and signInWithPassword (currently only `error.message` is shown but the silent-success case isn't handled).
+- **Guard against double-submit** while `busy`.
+- **Wait for session before navigating.** Replace the success-effect with a single `onAuthStateChange` listener that fires on `SIGNED_IN`, runs the answers migration, then navigates. This removes the race where we navigate before the session is written to localStorage.
 
-**`src/routes/app.insights.tsx`:**
-- For free users (`useEntitlements().tier === 'free'`), render inline CTA below the existing sketch badge: "Full map unlocks with membership →" linking to `/paywall?source=insights`.
-- Page stays unGated; sketch stays visible for everyone.
+### C. `src/routes/app.tsx` route guard
+- Replace the loader's `supabase.auth.getUser()` (network call, can race) with `supabase.auth.getSession()` for the initial gate. If no session, *then* fall back to `getUser()` once before redirecting. This matches the recommended Supabase pattern and stops the cold-nav bounce after OAuth.
 
-## Item 4 — Manage subscription portal
-`src/routes/app.profile.tsx`:
-- Use `useSubscription()`; only render the "Manage subscription" row when `isActive`.
-- Local state holds `{ portalUrl?: string; error?: string }`.
-- On row tap (no auto-open): call `createPortalSession({ data: { environment: getStripeEnvironment(), returnUrl: window.location.origin + '/app/profile' } })`.
-- On success: replace the row in-place with a styled anchor "Continue to billing →" pointing at returned `url`, `target="_blank"`, `rel="noopener noreferrer"`. User-initiated click → not blocked by iOS PWA popup guard.
-- On error: render the error message inline beneath the row in destructive text.
-- Replace the current hardcoded `detail="Annual"` (which is fake data) — show plan label from subscription row when available.
-
-## Item 5 — Paywall analytics
-
-**`src/routes/paywall.tsx`:**
-- Add `validateSearch` to read `?source=` (typed string, optional, defaults to `'unknown'`).
-- On mount: `track('paywall.view', { source, loopName })`.
-- In plan setter: `track('paywall.plan_select', { plan })`.
-- In `start()` before `openCheckout`: `track('paywall.checkout_start', { plan, source })`.
-
-**Call site updates:**
-- Onboarding completion route that navigates to `/paywall` → pass `search: { source: 'onboarding' }`. (Locate via grep of `to: "/paywall"`.)
-- Debrief soft-paywall CTA from Item 3 → `/paywall?source=debrief_limit`.
-- Insights inline CTA from Item 3 → `/paywall?source=insights`.
-
-**`src/routes/checkout.return.tsx`:**
-- On mount, if `session_id` present: `track('paywall.checkout_complete', { session_id })`. Fire-and-forget in a `useEffect` with empty deps.
-
-**Webhook `src/routes/api/public/payments/webhook.ts`:**
-- In `handleSubscriptionCreated` and `handleSubscriptionUpdated`, after the upsert/update, if `subscription.status === 'active'`, insert into `events` table via `supabaseAdmin`:
-  `{ name: 'subscription.activated', user_id: userId, props: { stripe_customer_id, plan: priceId } }`.
-- Confirms money cleared; independent from client-side `checkout_complete`.
-
-## Cross-cutting invariants
-- Hourly rate limit (Item 1) runs BEFORE free-tier gate (Item 3) — paid users hitting 3/hr see the rate-limit message, never the paywall.
-- No DB migrations.
-- No new secrets.
-- Paywall copy untouched.
+### D. Google sign-in
+- No code change needed beyond (C). Confirm `redirect_uri` is `window.location.origin + "/login"` (already correct) so preview and published each return to themselves.
 
 ## Files touched
-- `src/lib/ai.functions.ts` (Items 1 + 3)
-- `src/routes/__root.tsx` (Item 2)
-- `src/hooks/useEntitlements.ts` — new (Item 3)
-- `src/routes/app.debrief.tsx` (Item 3)
-- `src/routes/app.insights.tsx` (Item 3)
-- `src/routes/app.profile.tsx` (Item 4)
-- `src/routes/paywall.tsx` (Item 5)
-- `src/routes/checkout.return.tsx` (Item 5)
-- `src/routes/api/public/payments/webhook.ts` (Item 5)
-- 1–2 onboarding files that link to `/paywall` (Item 5 call-site update)
+
+- `supabase/config.toml` — via `configure_auth` tool (auto-confirm on)
+- `src/routes/login.tsx` — better error handling, signed-in listener, repeated-signup branch
+- `src/routes/app.tsx` — session-first guard
+
+## What stays the same
+
+- Onboarding → `/login?redirect=/onboarding/plan` flow
+- `migrateLocalAnswers` server function
+- `lovable.auth.signInWithOAuth("google", …)` call
+- RLS, profiles trigger, user_roles
+
+## Out of scope
+
+- Password reset page (not reported as broken; can add after if you want).
+- Apple sign-in.
