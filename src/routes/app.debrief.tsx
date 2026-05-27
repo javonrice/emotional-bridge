@@ -22,6 +22,12 @@ type DebriefRow = {
 
 function Debrief() {
   const submit = useServerFn(generateDebrief);
+  const historyFn = useServerFn(getDebriefHistory);
+  const qc = useQueryClient();
+  const { data: history } = useQuery({
+    queryKey: ["debrief-history"],
+    queryFn: () => historyFn(),
+  });
   const [stage, setStage] = useState<Stage>("input");
   const [text, setText] = useState("");
   const [debrief, setDebrief] = useState<DebriefRow | null>(null);
