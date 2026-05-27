@@ -35,6 +35,7 @@ import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppInsightsRouteImport } from './routes/app.insights'
 import { Route as AppDebriefRouteImport } from './routes/app.debrief'
 import { Route as AppCheckinRouteImport } from './routes/app.checkin'
+import { Route as AdminAiQualityRouteImport } from './routes/admin.ai-quality'
 
 const PaywallRoute = PaywallRouteImport.update({
   id: '/paywall',
@@ -166,12 +167,18 @@ const AppCheckinRoute = AppCheckinRouteImport.update({
   path: '/checkin',
   getParentRoute: () => AppRoute,
 } as any)
+const AdminAiQualityRoute = AdminAiQualityRouteImport.update({
+  id: '/admin/ai-quality',
+  path: '/admin/ai-quality',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/paywall': typeof PaywallRoute
+  '/admin/ai-quality': typeof AdminAiQualityRoute
   '/app/checkin': typeof AppCheckinRoute
   '/app/debrief': typeof AppDebriefRoute
   '/app/insights': typeof AppInsightsRoute
@@ -200,6 +207,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/paywall': typeof PaywallRoute
+  '/admin/ai-quality': typeof AdminAiQualityRoute
   '/app/checkin': typeof AppCheckinRoute
   '/app/debrief': typeof AppDebriefRoute
   '/app/insights': typeof AppInsightsRoute
@@ -229,6 +237,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/paywall': typeof PaywallRoute
+  '/admin/ai-quality': typeof AdminAiQualityRoute
   '/app/checkin': typeof AppCheckinRoute
   '/app/debrief': typeof AppDebriefRoute
   '/app/insights': typeof AppInsightsRoute
@@ -259,6 +268,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/login'
     | '/paywall'
+    | '/admin/ai-quality'
     | '/app/checkin'
     | '/app/debrief'
     | '/app/insights'
@@ -287,6 +297,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/login'
     | '/paywall'
+    | '/admin/ai-quality'
     | '/app/checkin'
     | '/app/debrief'
     | '/app/insights'
@@ -315,6 +326,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/login'
     | '/paywall'
+    | '/admin/ai-quality'
     | '/app/checkin'
     | '/app/debrief'
     | '/app/insights'
@@ -344,6 +356,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   PaywallRoute: typeof PaywallRoute
+  AdminAiQualityRoute: typeof AdminAiQualityRoute
   OnboardingAgeRoute: typeof OnboardingAgeRoute
   OnboardingAnalyzingRoute: typeof OnboardingAnalyzingRoute
   OnboardingAppsRoute: typeof OnboardingAppsRoute
@@ -547,6 +560,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCheckinRouteImport
       parentRoute: typeof AppRoute
     }
+    '/admin/ai-quality': {
+      id: '/admin/ai-quality'
+      path: '/admin/ai-quality'
+      fullPath: '/admin/ai-quality'
+      preLoaderRoute: typeof AdminAiQualityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -573,6 +593,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   PaywallRoute: PaywallRoute,
+  AdminAiQualityRoute: AdminAiQualityRoute,
   OnboardingAgeRoute: OnboardingAgeRoute,
   OnboardingAnalyzingRoute: OnboardingAnalyzingRoute,
   OnboardingAppsRoute: OnboardingAppsRoute,
