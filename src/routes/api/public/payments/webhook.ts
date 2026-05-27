@@ -63,6 +63,16 @@ async function handleSubscriptionCreated(subscription: any, env: StripeEnv) {
 
 async function handleSubscriptionUpdated(subscription: any, env: StripeEnv) {
   const { priceId, productId, periodStart, periodEnd } = resolveIds(subscription);
+
+  // Read prior status so we only emit subscription.activated on a real
+  // transition into 'active' (not on every renewal/metadata update).
+  const { data: prior } = await getSupabase()
+    .from("subscriptions")
+    .select("status")
+    .eq("stripe_subscription_id", subscription.id)
+    .eq("environment", env)
+    .maybeSingle();
+
   await getSupabase()
     .from("subscriptions")
     .update({
@@ -77,6 +87,10 @@ async function handleSubscriptionUpdated(subscription: any, env: StripeEnv) {
     })
     .eq("stripe_subscription_id", subscription.id)
     .eq("environment", env);
+
+  if (subscription.status === "active" && prior?.status !== "active") {
+    await emitSubscriptionActivated(subscription, priceId);
+  }
 }
 
 async function handleSubscriptionDeleted(subscription: any, env: StripeEnv) {
