@@ -22,7 +22,7 @@ function Plan() {
 
   useEffect(() => {
     if (done >= STEPS.length) {
-      const t = setTimeout(() => nav({ to: "/paywall" }), 700);
+      const t = setTimeout(() => nav({ to: "/paywall", search: { source: "onboarding" } }), 700);
       return () => clearTimeout(t);
     }
     const t = setTimeout(() => setDone((d) => d + 1), 650);

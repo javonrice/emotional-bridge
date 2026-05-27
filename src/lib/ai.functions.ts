@@ -98,6 +98,44 @@ export const generateDebrief = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ text: z.string().min(1).max(4000) }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+
+    // Hourly abuse rate limit — applies to ALL users (paid included).
+    // Runs BEFORE the free-tier paywall gate below.
+    const sinceHour = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count: hourlyCount } = await supabase
+      .from("debriefs")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", sinceHour);
+    if ((hourlyCount ?? 0) >= 3) {
+      return { debrief: null, error: "You've hit your hourly limit. Try again in a bit." };
+    }
+
+    // Free-tier gate — 3 lifetime debriefs for users without an active subscription.
+    const { data: activeSub } = await supabase
+      .from("subscriptions")
+      .select("status, current_period_end")
+      .eq("user_id", userId)
+      .in("status", ["active", "trialing", "past_due", "canceled"])
+      .order("created_at", { ascending: false })
+      .limit(5);
+    const now = Date.now();
+    const isPaid = (activeSub ?? []).some((s) => {
+      const end = s.current_period_end ? new Date(s.current_period_end).getTime() : null;
+      if (["active", "trialing", "past_due"].includes(s.status)) return end === null || end > now;
+      if (s.status === "canceled" && end && end > now) return true;
+      return false;
+    });
+    if (!isPaid) {
+      const { count: lifetimeCount } = await supabase
+        .from("debriefs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId);
+      if ((lifetimeCount ?? 0) >= 3) {
+        return { debrief: null, error: "PAYWALL", upgradeRequired: true };
+      }
+    }
+
     const gateway = getGateway();
 
     const prompt = `You are LOOP. The user just submitted a debrief of a recent loop episode. Read it carefully and reflect it back to them in three parts: pattern, reframe, micro_action. Be warm, observational, specific, non-shaming, never preachy. Do not diagnose. Do not say "I'm sorry you're going through this." Speak in second person ("you").

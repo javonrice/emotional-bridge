@@ -17,6 +17,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { deriveLoopName, resetOnboarding, useOnboarding, useStreak } from "@/lib/onboarding-store";
 import { IosWaitlistSheet } from "@/components/ios/ComingSoonBadge";
 import { exportUserData, deleteAccount } from "@/lib/account.functions";
+import { createPortalSession } from "@/lib/payments.functions";
+import { useSubscription } from "@/hooks/useSubscription";
+import { getStripeEnvironment } from "@/lib/stripe";
 
 export const Route = createFileRoute("/app/profile")({
   component: Profile,
@@ -29,9 +32,13 @@ function Profile() {
   const loopName = deriveLoopName(answers);
   const [waitlist, setWaitlist] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [busy, setBusy] = useState<"export" | "delete" | null>(null);
+  const [busy, setBusy] = useState<"export" | "delete" | "portal" | null>(null);
+  const [portalUrl, setPortalUrl] = useState<string | null>(null);
+  const [portalError, setPortalError] = useState<string | null>(null);
   const exportFn = useServerFn(exportUserData);
   const deleteFn = useServerFn(deleteAccount);
+  const portalFn = useServerFn(createPortalSession);
+  const { isActive, subscription } = useSubscription();
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -72,6 +79,38 @@ function Profile() {
     }
   };
 
+  const onPortal = async () => {
+    setBusy("portal");
+    setPortalError(null);
+    try {
+      const res = await portalFn({
+        data: {
+          environment: getStripeEnvironment(),
+          returnUrl: window.location.origin + "/app/profile",
+        },
+      });
+      if ("error" in res) {
+        setPortalError(res.error);
+      } else {
+        setPortalUrl(res.url);
+      }
+    } catch (e) {
+      setPortalError(e instanceof Error ? e.message : "Could not open billing portal.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const planLabel = subscription?.price_id
+    ? subscription.price_id === "loop_annual"
+      ? "Annual"
+      : subscription.price_id === "loop_monthly"
+        ? "Monthly"
+        : subscription.price_id === "loop_lifetime"
+          ? "Lifetime"
+          : subscription.price_id
+    : "Active";
+
   return (
     <div className="safe-top px-6 pb-24">
       <h1 className="pt-2 text-[28px] font-bold tracking-tight">You</h1>
@@ -90,7 +129,33 @@ function Profile() {
       <div className="mt-6 overflow-hidden rounded-2xl border border-white/8 bg-card">
         <Row icon={Apple} label="Connect iOS Screen Time" detail="Soon" onClick={() => setWaitlist(true)} accent />
         <Row icon={Bell} label="Drift alerts" detail="On" />
-        <Row icon={CreditCard} label="Manage subscription" detail="Annual" />
+        {isActive && (
+          portalUrl ? (
+            <a
+              href={portalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="tap-scale flex w-full items-center gap-4 border-b border-white/5 px-4 py-4 text-left"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                <CreditCard size={18} />
+              </span>
+              <span className="flex-1 text-[15px] font-medium text-primary">Continue to billing →</span>
+            </a>
+          ) : (
+            <>
+              <Row
+                icon={CreditCard}
+                label={busy === "portal" ? "Opening…" : "Manage subscription"}
+                detail={planLabel}
+                onClick={onPortal}
+              />
+              {portalError && (
+                <div className="border-b border-white/5 px-4 pb-3 text-xs text-destructive">{portalError}</div>
+              )}
+            </>
+          )
+        )}
         <RowLink icon={LifeBuoy} label="Crisis resources" to="/crisis" />
         <RowLink icon={Lock} label="Privacy & data" to="/legal/privacy" />
         <RowLink icon={FileText} label="Terms of Service" to="/legal/terms" />
