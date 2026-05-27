@@ -4,6 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/app")({
   beforeLoad: async ({ location }) => {
+    // Check session first (hydrates from storage without a network round-trip).
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData.session) return;
+    // Fall back to getUser() once before redirecting, in case session is still hydrating after OAuth.
     const { data } = await supabase.auth.getUser();
     if (!data.user) {
       throw redirect({ to: "/login", search: { redirect: location.href } });
