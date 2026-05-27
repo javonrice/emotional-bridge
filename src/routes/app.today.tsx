@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { ChevronRight, Sparkles } from "lucide-react";
 import { deriveLoopName, useOnboarding, useStreak } from "@/lib/onboarding-store";
 
