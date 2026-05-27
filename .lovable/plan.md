@@ -1,132 +1,166 @@
 
-# LOOP — Mobile PWA Prototype
+# LOOP — Phased Build Plan (Prototype → Shippable Product)
 
-A mobile-first, iOS-feeling PWA for the LOOP app (emotional pattern intelligence / compulsive-behavior recovery). Goal of this build: a clickable, polished prototype with a long, psychologically engineered onboarding that lands on a paywall, followed by a fully mocked-data app so we can find UX gaps before wiring real data, Claude, Screen Time, or Supabase.
-
-## Scope (in)
-- Dark LOOP design system (near-black bg, electric indigo accent, Inter/SF stack)
-- PWA installability (manifest + icons, **no service worker** — avoids preview-iframe issues)
-- ~17-screen onboarding sequence engineered for psychological debt → paywall
-- Mocked in-app experience (Home, Check-in, Debrief, Insights, Profile)
-- iOS-native feel: safe-area padding, large titles, segmented controls, blur tab bar, sheet-style modals, spring transitions, tap-scale feedback, no browser chrome on install
-- LocalStorage persistence for onboarding answers + mock streak so the prototype feels alive
-
-## Scope (out, this pass)
-- Real auth, real Supabase, real Claude calls, real Screen Time, real push, real payments
-- Service worker / offline support
-- Android-specific tuning beyond "it works"
+**Product framing:** LOOP ships as a **self-report awareness tool**. Every screen that would consume iOS Screen Time data shows a "🍎 Auto-tracking — Coming soon on iOS" badge with a waitlist tap, while the user manually logs check-ins and debriefs. Lovable AI Gateway powers the personalized loop naming, debrief reframes, and pattern summaries — with thumbs-up/down feedback wired in from day one so we can iterate prompts on real signal.
 
 ---
 
-## Onboarding flow (the conversion engine)
+## Phase 1 — Foundation: Cloud, Auth, Data Migration
+**Goal:** Real backend, real users, localStorage answers persist to the cloud.
 
-Each screen is one decision, full-bleed, with momentum forward. Answers stored in `localStorage` so reveals later feel personalized. Progress dots top of screen (except cinematic reveals).
+- Enable Lovable Cloud.
+- Auth: email/password + Google (via Lovable broker). `/login`, `/signup`, `/reset-password`, `/auth/callback`.
+- Tables (all RLS-on, `user_roles` separate):
+  - `profiles` (auto-created via trigger)
+  - `onboarding_answers` (one row per user)
+  - `checkins` (energy, emotion, activity, timestamp)
+  - `debriefs` (text, reframe_json, created_at)
+  - `loops` (name, trigger_chain, summary, generated_by_ai, model, prompt_version)
+  - `subscriptions` (plan, status, trial_end, stripe_customer_id)
+  - `user_roles` + `has_role()` security-definer function
+- `_authenticated` layout wraps `/app/*`; unauth users → `/login`.
+- One-time localStorage → Cloud migration on first login.
+- Server fn `migrateLocalAnswers`.
 
-1. **Splash** — Logo pulse, tagline "See what's running you.", Begin
-2. **Truth opener** — "This isn't another blocker app." 3-line manifesto, Continue
-3. **Question: age range** (chips)
-4. **Question: how long has this loop been running?** (1y / 3y / 5y / 10y+)
-5. **Cinematic reveal #1 (gut punch)** — Computes from answer: *"That's roughly 4,380 hours of your life inside the loop."* Animated counter ticks up. Single Continue.
-6. **Question: how often do you feel out of control?** (slider 1–10)
-7. **Question: which apps pull you in?** (multi-select: Instagram, TikTok, Reddit, X, YouTube, Dating, Discord, Other)
-8. **Question: when does it usually happen?** (Morning / Afternoon / Late night / After conflict)
-9. **Question: what feeling shows up first?** (Lonely, Bored, Stressed, Numb, Restless, Ashamed, Empty)
-10. **Cinematic reveal #2 (mirror)** — "Most men who answer like you describe the same feeling: **[their pick] → [gateway app] → the loop.**" Pattern pills animate left-to-right.
-11. **Story prompt** — "Tell me about the last time you felt the pull." Big text area, optional voice button (UI only).
-12. **AI analyzing screen** — Pulse loop animation, rotating reassurance lines ("Reading your pattern…", "Mapping your triggers…"). ~3.5s.
-13. **First Loop reveal card** — Mocked Claude response personalized with their inputs: loop name ("The Late Night Lonely Spiral"), trigger chain pills, 3-sentence summary. *This is the hook.*
-14. **Social proof** — 3-card swipeable testimonials (mocked, on-tone, no shame).
-15. **Science / trust** — "Awareness is the mechanism, not willpower." 3 bullet credibility points, calm icons.
-16. **Commitment screen** — "Are you ready to see your loop clearly?" Two buttons: "I'm ready" (primary), "Not yet" (ghost, loops them back to a softer reframe then forward).
-17. **Building your plan** — Animated checklist ticks off ("Mapping your triggers ✓", "Calibrating drift windows ✓", "Personalizing your loop ✓"). Builds anticipation.
-18. **Paywall** — Cinematic. Plan summary card on top ("Your loop is ready"). Three options: **Annual $59.99 (Best value, ~$5/mo, 7-day free trial)** preselected, Monthly $14.99, Lifetime $149. Trust row (cancel anytime, encrypted, no shame). Sticky CTA "Start 7-day free trial". Small "Maybe later" link → soft objection-handler sheet → if dismissed, lands them in app anyway (prototype convenience).
-
-Psychological levers used (textbook): commitment & consistency (micro-yeses early), loss framing (hours lost reveal), identity mirroring (reveal #2), specificity/personalization (their loop named for them), social proof, authority (science framing), anchoring (lifetime price makes annual feel cheap), default bias (annual preselected), reduced friction (free trial framing).
-
-## App (post-paywall, mocked)
-
-Bottom tab bar with iOS-style backdrop blur and SF-symbol-like icons:
-
-- **Today** — Awareness Streak ring (animated SVG, 23 days mocked), "Today's check-in" CTA card, "Your latest insight" card, drift-window hint chip.
-- **Check-in** — 3-step flow: Energy (Low/Med/High) → Emotion (7 cards) → Activity (6 cards). Completion screen updates mocked streak in localStorage with subtle confetti.
-- **Debrief** — Text area + mock voice button → submit → animated analysis → mocked Debrief Card (shareable layout, screenshot-ready 9:16 aspect).
-- **Insights** — Segmented control: Gateway / Loop / Monthly.
-  - Gateway: ranked card with correlation bars (mocked top 5 apps).
-  - Loop: SVG flow-graph visualization of nodes + curved edges with glow (static mock layout, no D3 dependency needed for prototype).
-  - Monthly: 5-card horizontal swipeable Spotify-Wrapped-style sequence.
-- **Profile** — Streak stats grid, "Your loop name", settings list (notifications, account, sign out — all non-functional toggles), "Manage subscription" row.
+**Deliverable:** A user can sign up, get their data persisted, sign in on another device and see the same loop.
 
 ---
 
-## Technical details
+## Phase 2 — AI Gateway: Generation + Quality Feedback Loop
+**Goal:** Replace `deriveLoopName` template with real LLM output, and instrument quality from day one.
 
-**Routes (TanStack Start file-based, kebab in URL, dot-separated filenames):**
-```
-src/routes/
-  index.tsx                    -> redirects to /onboarding/welcome or /app/today based on localStorage flag
-  onboarding.tsx               -> layout: safe-area shell + progress dots + back gesture
-  onboarding.welcome.tsx
-  onboarding.opener.tsx
-  onboarding.age.tsx
-  onboarding.duration.tsx
-  onboarding.reveal-hours.tsx
-  onboarding.control.tsx
-  onboarding.apps.tsx
-  onboarding.timing.tsx
-  onboarding.feeling.tsx
-  onboarding.reveal-mirror.tsx
-  onboarding.story.tsx
-  onboarding.analyzing.tsx
-  onboarding.loop.tsx
-  onboarding.proof.tsx
-  onboarding.science.tsx
-  onboarding.commit.tsx
-  onboarding.plan.tsx
-  paywall.tsx
-  app.tsx                      -> layout: tab bar + safe-area
-  app.today.tsx
-  app.checkin.tsx              -> internal step state, no nested route needed
-  app.debrief.tsx
-  app.insights.tsx             -> segmented control switches sub-view in-component
-  app.profile.tsx
-```
+### Generation
+- Add `LOVABLE_API_KEY` via `ai_gateway--create`.
+- `src/lib/ai-gateway.server.ts` helper (OpenAI-compat provider).
+- Server fns (`createServerFn` + `requireSupabaseAuth`):
+  - `generateLoop({ answers })` → structured output (loop name, 3 trigger chain pills, 3-sentence summary). Persisted to `loops` with `model` + `prompt_version`.
+  - `generateDebrief({ text })` → structured reframe card (pattern, gentle reframe, micro-action). Persisted to `debriefs` with same metadata.
+  - `generateMonthlyReport({ userId })` → Spotify-Wrapped style narrative.
+- Model: `google/gemini-3-flash-preview`. Surface 429/402 as friendly toasts.
+- Onboarding `analyzing.tsx` calls real `generateLoop`.
 
-**Design tokens** — Rewrite `src/styles.css` `:root` to LOOP palette (bg `#0A0A0F`, surface `#141420`, card `#1E1E30`, primary `#6C63FF`, success `#00E5A0`, text `#F0F0F8` / `#8888AA`). Add `--font-display` (SF Pro fallback → Inter). Add iOS-feel utility classes: `.tap-scale`, `.safe-top`, `.safe-bottom`, `.ios-blur`, `.sheet-grabber`.
+### Quality feedback (day-one signal)
+- New table `ai_feedback`:
+  ```
+  id, user_id, surface ('loop_card' | 'debrief_card' | 'monthly_report'),
+  source_id (FK to loops/debriefs), rating ('up' | 'down'),
+  reason (nullable enum: 'generic', 'inaccurate', 'tone_off', 'too_long', 'other'),
+  comment (nullable text, max 500), model, prompt_version,
+  answers_snapshot (jsonb — what the prompt saw), created_at
+  ```
+  RLS: user inserts own rows; admin role reads all.
+- `<AIFeedback />` component: subtle thumbs-up/down pair under every AI-generated card. One-tap up = silent log. Tap down → sheet with reason chips + optional comment.
+- Wired into: First Loop Reveal card (onboarding), every Debrief Card, every Monthly Report card.
+- Server fn `recordAIFeedback({ surface, sourceId, rating, reason?, comment? })`.
+- Admin route `/admin/ai-quality` (gated by `has_role('admin')`):
+  - 7/30/90-day up/down rates per `surface` and `prompt_version`.
+  - Filter by reason; sort low-rated outputs to inspect prompt + answers snapshot side-by-side.
+  - "Bad output" view for prompt iteration.
+- `prompt_version` constant in `ai-gateway.server.ts` — bump on every prompt change so we can A/B compare versions in the admin view.
+- Optional: random 10% of outputs get a second model run (`gpt-5-mini`) stored shadow-side for offline comparison once dataset is meaningful.
 
-**iOS feel kit:**
-- `framer-motion` for spring page transitions (`bun add motion`)
-- Tap feedback via `whileTap={{ scale: 0.97 }}`
-- Bottom tab bar uses `backdrop-blur-xl` over a translucent surface
-- Sheets use rounded-t-3xl with grabber bar
-- Disable text selection on chrome elements, allow on inputs
-- `viewport-fit=cover` + `env(safe-area-inset-*)` padding
-
-**PWA installability (manifest-only, no SW):**
-- `public/manifest.json` with `display: standalone`, `theme_color: #0A0A0F`, `background_color: #0A0A0F`, icons 192/512 (generated)
-- iOS meta tags in `__root.tsx` head: `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style: black-translucent`, `apple-touch-icon`
-- No service worker (per Lovable PWA guidance — avoids preview iframe issues; installability still works)
-
-**State / persistence:**
-- Tiny `useOnboarding()` hook backed by `localStorage` for answers + completion flag
-- `useMockStreak()` for streak counter
-- No backend, no Supabase enablement this pass
-
-**Charts/visuals:**
-- Loop visualization: hand-authored SVG with `<filter feGaussianBlur>` glow — looks premium, zero dep cost
-- Gateway bars: pure CSS
-- Awareness ring: SVG circle with `stroke-dasharray` animation
-
-**Dependencies to add:** `motion` (framer-motion successor). Recharts not needed for the mock — custom SVG is lighter and matches the cinematic spec better.
-
-**Image assets:** Generate 2–3 (app icon 1024, splash/loop hero, paywall hero) with imagegen at premium for the icon, fast for the rest.
+**Deliverable:** Every AI output is rateable, every rating is tied to the exact prompt version + inputs that produced it, and we have a real dashboard for prompt iteration instead of vibes.
 
 ---
+
+## Phase 3 — Payments: Stripe Subscriptions
+**Goal:** Paywall enforces access; free tier is intentionally thin.
+
+- Run `recommend_payment_provider` → enable Stripe (digital service).
+- Products: Annual $59.99 (7d trial), Monthly $14.99, Lifetime $149.
+- Checkout server fn + `/api/public/stripe-webhook` route (signature verified) → writes `subscriptions` row.
+- `useSubscription()` hook gates premium routes.
+- **Free tier:** today + 1 check-in/day, no debrief, no insights, no loop reveal beyond name.
+- "Maybe later" → real limited mode.
+- Restore purchase + Stripe portal link.
+
+**Deliverable:** Real money can be collected; non-payers see a real wall.
+
+---
+
+## Phase 4 — iOS "Coming Soon" Layer
+**Goal:** Honestly position auto-tracking as future native iOS without breaking the PRD's promise.
+
+- Reusable `<ComingSoonBadge variant="ios" />` — Apple glyph + "Auto-tracking · iOS soon".
+- `onboarding.tracking-mode.tsx`: **Self-report (now)** vs **Auto-tracking (iOS, coming soon — join waitlist)**.
+- `ios_waitlist` table; "Notify me" stores email + answers.
+- Insights → Gateway: blurred "auto-detected" card with Coming Soon overlay + "For now, based on what you told us" using self-reported `apps`.
+- Drift windows: manual picker now, "auto-detected" Coming Soon.
+- Profile → "Connect iOS Screen Time" → waitlist sheet.
+- Feature flag flips these live when native ships, no redesign.
+
+**Deliverable:** Product feels complete and honest.
+
+---
+
+## Phase 5 — Core App Completion (self-report depth)
+**Goal:** The five tabs become a real daily product.
+
+- **Today:** real streak (server-computed, timezone-aware, decays on miss), check-in CTA, latest insight card, manual drift reminder chip.
+- **Check-in:** persist to `checkins`, back-nav between steps, edit today's entry.
+- **Debrief:** Web Speech API voice input, submit → real `generateDebrief`, history list, share-card PNG export (html-to-image), thumbs feedback inline.
+- **Insights:**
+  - Gateway (self-report): tally from check-in `activity` over time.
+  - Loop: SVG flow from real check-in sequences (≥14 entries; <14 → "X more days" empty state).
+  - Monthly: real `generateMonthlyReport` at ≥30 days, also rateable.
+- **Profile:** real stats grid, edit loop name, manage subscription, notification settings, export data (GDPR), delete account. Remove dev "Restart onboarding".
+
+**Deliverable:** No mock data anywhere; loading/empty/error states everywhere.
+
+---
+
+## Phase 6 — Notifications & Install
+**Goal:** Re-engagement within PWA limits.
+
+- Notification permission screen post-paywall.
+- Web Push via SW (Android + iOS 16.4+ installed PWA).
+- `scheduleDriftReminder` server fn + daily cron at `/api/public/cron/drift-push`.
+- "Add to Home Screen" iOS walkthrough.
+- Service Worker (kill-switch-safe pattern): offline shell + push only, NetworkFirst HTML.
+- Splash screens, theme-color, manifest polish.
+
+**Deliverable:** Daily nudge on installed PWAs.
+
+---
+
+## Phase 7 — Safety, Legal, Trust
+**Goal:** Mental-health-adjacent product ships responsibly.
+
+- Crisis resource screen (Profile + auto-surfaced on risk-keyword regex pre-filter in debrief input).
+- Disclaimer on first AI output: "LOOP is not therapy."
+- Terms, Privacy, EULA pages (placeholder; flag for legal review).
+- Subscription terms on paywall (auto-renewal, cancel anytime).
+- Cookie/analytics consent banner.
+- Data export + account deletion endpoints.
+
+**Deliverable:** GDPR / subscription guidelines defensible.
+
+---
+
+## Phase 8 — Polish, A11y, Funnel Analytics
+**Goal:** Ship-quality finish.
+
+- **Funnel analytics** (separate from AI feedback): events on every onboarding step + paywall view/select/start/abandon + check-in + debrief submit + feedback rating. Write to local `events` table; query for funnel + retention. PostHog optional later.
+- A11y: ARIA on custom buttons, focus rings, WCAG AA contrast, `prefers-reduced-motion` opt-out, SVG `<title>` labels.
+- 404, error boundaries on every route.
+- `noindex` on onboarding/auth.
+- Lighthouse 90+ mobile.
+
+**Deliverable:** Production-ready.
+
+---
+
+## Technical Notes
+
+- All AI calls via `createServerFn` + `requireSupabaseAuth` + `ai-gateway.server.ts`. No client-side AI keys.
+- Every AI generation writes `model` + `prompt_version` alongside its output — feedback joins on that to compare prompts.
+- All payment writes via signed Stripe webhook → `supabaseAdmin`.
+- Every new table: `GRANT` block + RLS policies in the same migration.
+- Verify `src/start.ts` has `attachSupabaseAuth` in `functionMiddleware` before Phase 1.
+- iOS "Coming Soon" is a single component reused everywhere.
+
+## Out of scope (deferred to native iOS app)
+Real Screen Time data, precise background push scheduling, Apple/Google IAP, App Store submission, native haptics. All visible in-product as "Coming soon."
 
 ## Build order
-1. Tokens + base shell (styles.css, __root meta, manifest, icons)
-2. Onboarding layout + hook + all 17 screens with transitions
-3. Paywall
-4. App tab shell + 5 tab screens with mock data
-5. Polish pass: spring transitions, tap-scale, blur tab bar, safe-area, viewport check at 390×844
-
-Once approved I'll implement straight through.
+Phase 1 → 2 → 3 = product-vs-prototype line. Phases 4–8 = shippable-product line. Each phase independently shippable.
