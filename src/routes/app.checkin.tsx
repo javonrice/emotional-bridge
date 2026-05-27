@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { saveCheckin, getCheckinStats } from "@/lib/checkins.functions";
 import { track } from "@/lib/analytics.functions";
+import { MilestoneSheet } from "@/components/loop/MilestoneSheet";
 
 
 export const Route = createFileRoute("/app/checkin")({
