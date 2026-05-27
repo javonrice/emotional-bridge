@@ -65,7 +65,7 @@ function Insights() {
                   </div>
                 ))}
               </div>
-              <p className="mt-6 text-[11px] text-muted-foreground/70">Based on 30 days of check-in data</p>
+              <p className="mt-6 text-[11px] text-muted-foreground/70">For now, based on what you told us. iOS auto-detection coming soon.</p>
             </div>
           </motion.section>
         )}
