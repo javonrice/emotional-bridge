@@ -1,8 +1,10 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Check, Lock, Sparkles, X } from "lucide-react";
 import { completeOnboarding, deriveLoopName, useOnboarding } from "@/lib/onboarding-store";
+import { useStripeCheckout } from "@/hooks/useStripeCheckout";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/paywall")({
   component: Paywall,
@@ -10,20 +12,33 @@ export const Route = createFileRoute("/paywall")({
 
 type Plan = "annual" | "monthly" | "lifetime";
 
-const PLANS: Record<Plan, { label: string; price: string; per: string; tag?: string; trial?: string }> = {
-  annual: { label: "Annual", price: "$59.99", per: "/year · ~$5/mo", tag: "Best value · save 67%", trial: "7-day free trial" },
-  monthly: { label: "Monthly", price: "$14.99", per: "/month" },
-  lifetime: { label: "Lifetime", price: "$149", per: "one-time · forever" },
+const PLANS: Record<Plan, { label: string; price: string; per: string; tag?: string; trial?: string; priceId: string }> = {
+  annual: { label: "Annual", price: "$59.99", per: "/year · ~$5/mo", tag: "Best value · save 67%", trial: "7-day free trial", priceId: "loop_annual" },
+  monthly: { label: "Monthly", price: "$14.99", per: "/month", priceId: "loop_monthly" },
+  lifetime: { label: "Lifetime", price: "$149", per: "one-time · forever", priceId: "loop_lifetime" },
 };
 
 function Paywall() {
   const nav = useNavigate();
   const { answers } = useOnboarding();
+  const { user } = useAuth();
+  const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [plan, setPlan] = useState<Plan>("annual");
   const [showSheet, setShowSheet] = useState(false);
   const loopName = deriveLoopName(answers);
 
   const start = () => {
+    completeOnboarding();
+    const p = PLANS[plan];
+    openCheckout({
+      priceId: p.priceId,
+      customerEmail: user?.email,
+      userId: user?.id,
+      returnUrl: `${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`,
+    });
+  };
+
+  const skip = () => {
     completeOnboarding();
     nav({ to: "/app/today" });
   };

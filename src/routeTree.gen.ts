@@ -35,12 +35,14 @@ import { Route as OnboardingAgeRouteImport } from './routes/onboarding.age'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as LegalEulaRouteImport } from './routes/legal.eula'
+import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AppTodayRouteImport } from './routes/app.today'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppInsightsRouteImport } from './routes/app.insights'
 import { Route as AppDebriefRouteImport } from './routes/app.debrief'
 import { Route as AppCheckinRouteImport } from './routes/app.checkin'
 import { Route as AdminAiQualityRouteImport } from './routes/admin.ai-quality'
+import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 
 const PaywallRoute = PaywallRouteImport.update({
   id: '/paywall',
@@ -172,6 +174,11 @@ const LegalEulaRoute = LegalEulaRouteImport.update({
   path: '/legal/eula',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
+  id: '/checkout/return',
+  path: '/checkout/return',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppTodayRoute = AppTodayRouteImport.update({
   id: '/today',
   path: '/today',
@@ -202,6 +209,12 @@ const AdminAiQualityRoute = AdminAiQualityRouteImport.update({
   path: '/admin/ai-quality',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPaymentsWebhookRoute =
+  ApiPublicPaymentsWebhookRouteImport.update({
+    id: '/api/public/payments/webhook',
+    path: '/api/public/payments/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -215,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/app/insights': typeof AppInsightsRoute
   '/app/profile': typeof AppProfileRoute
   '/app/today': typeof AppTodayRoute
+  '/checkout/return': typeof CheckoutReturnRoute
   '/legal/eula': typeof LegalEulaRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -236,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/onboarding/timing': typeof OnboardingTimingRoute
   '/onboarding/tracking-mode': typeof OnboardingTrackingModeRoute
   '/onboarding/welcome': typeof OnboardingWelcomeRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -249,6 +264,7 @@ export interface FileRoutesByTo {
   '/app/insights': typeof AppInsightsRoute
   '/app/profile': typeof AppProfileRoute
   '/app/today': typeof AppTodayRoute
+  '/checkout/return': typeof CheckoutReturnRoute
   '/legal/eula': typeof LegalEulaRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -270,6 +286,7 @@ export interface FileRoutesByTo {
   '/onboarding/timing': typeof OnboardingTimingRoute
   '/onboarding/tracking-mode': typeof OnboardingTrackingModeRoute
   '/onboarding/welcome': typeof OnboardingWelcomeRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -284,6 +301,7 @@ export interface FileRoutesById {
   '/app/insights': typeof AppInsightsRoute
   '/app/profile': typeof AppProfileRoute
   '/app/today': typeof AppTodayRoute
+  '/checkout/return': typeof CheckoutReturnRoute
   '/legal/eula': typeof LegalEulaRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -305,6 +323,7 @@ export interface FileRoutesById {
   '/onboarding/timing': typeof OnboardingTimingRoute
   '/onboarding/tracking-mode': typeof OnboardingTrackingModeRoute
   '/onboarding/welcome': typeof OnboardingWelcomeRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -320,6 +339,7 @@ export interface FileRouteTypes {
     | '/app/insights'
     | '/app/profile'
     | '/app/today'
+    | '/checkout/return'
     | '/legal/eula'
     | '/legal/privacy'
     | '/legal/terms'
@@ -341,6 +361,7 @@ export interface FileRouteTypes {
     | '/onboarding/timing'
     | '/onboarding/tracking-mode'
     | '/onboarding/welcome'
+    | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -354,6 +375,7 @@ export interface FileRouteTypes {
     | '/app/insights'
     | '/app/profile'
     | '/app/today'
+    | '/checkout/return'
     | '/legal/eula'
     | '/legal/privacy'
     | '/legal/terms'
@@ -375,6 +397,7 @@ export interface FileRouteTypes {
     | '/onboarding/timing'
     | '/onboarding/tracking-mode'
     | '/onboarding/welcome'
+    | '/api/public/payments/webhook'
   id:
     | '__root__'
     | '/'
@@ -388,6 +411,7 @@ export interface FileRouteTypes {
     | '/app/insights'
     | '/app/profile'
     | '/app/today'
+    | '/checkout/return'
     | '/legal/eula'
     | '/legal/privacy'
     | '/legal/terms'
@@ -409,6 +433,7 @@ export interface FileRouteTypes {
     | '/onboarding/timing'
     | '/onboarding/tracking-mode'
     | '/onboarding/welcome'
+    | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -418,6 +443,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   PaywallRoute: typeof PaywallRoute
   AdminAiQualityRoute: typeof AdminAiQualityRoute
+  CheckoutReturnRoute: typeof CheckoutReturnRoute
   LegalEulaRoute: typeof LegalEulaRoute
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalTermsRoute: typeof LegalTermsRoute
@@ -439,6 +465,7 @@ export interface RootRouteChildren {
   OnboardingTimingRoute: typeof OnboardingTimingRoute
   OnboardingTrackingModeRoute: typeof OnboardingTrackingModeRoute
   OnboardingWelcomeRoute: typeof OnboardingWelcomeRoute
+  ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -625,6 +652,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LegalEulaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/checkout/return': {
+      id: '/checkout/return'
+      path: '/checkout/return'
+      fullPath: '/checkout/return'
+      preLoaderRoute: typeof CheckoutReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/today': {
       id: '/app/today'
       path: '/today'
@@ -667,6 +701,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAiQualityRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/payments/webhook': {
+      id: '/api/public/payments/webhook'
+      path: '/api/public/payments/webhook'
+      fullPath: '/api/public/payments/webhook'
+      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -695,6 +736,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   PaywallRoute: PaywallRoute,
   AdminAiQualityRoute: AdminAiQualityRoute,
+  CheckoutReturnRoute: CheckoutReturnRoute,
   LegalEulaRoute: LegalEulaRoute,
   LegalPrivacyRoute: LegalPrivacyRoute,
   LegalTermsRoute: LegalTermsRoute,
@@ -716,6 +758,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingTimingRoute: OnboardingTimingRoute,
   OnboardingTrackingModeRoute: OnboardingTrackingModeRoute,
   OnboardingWelcomeRoute: OnboardingWelcomeRoute,
+  ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

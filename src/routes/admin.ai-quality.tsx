@@ -19,7 +19,8 @@ type Summary = {
   up: number;
   down: number;
   total: number;
-  up_rate: number;
+  up_rate: number | null;
+  enough_samples: boolean;
 };
 
 type BadRow = {
@@ -114,7 +115,9 @@ function AIQualityPage() {
                       <td className="px-3 py-2 text-right text-success">{r.up}</td>
                       <td className="px-3 py-2 text-right text-destructive">{r.down}</td>
                       <td className="px-3 py-2 text-right">{r.total}</td>
-                      <td className="px-3 py-2 text-right font-semibold">{r.up_rate}%</td>
+                      <td className="px-3 py-2 text-right font-semibold">
+                        {r.enough_samples ? `${r.up_rate}%` : <span className="text-muted-foreground/60" title="Need at least 5 ratings">n/a</span>}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

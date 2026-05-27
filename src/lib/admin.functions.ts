@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
+const MIN_SAMPLE_N = 5;
+
 const QuerySchema = z.object({
   days: z.number().int().min(1).max(365).default(30),
 });
@@ -45,6 +47,7 @@ export const getAIQualityStats = createServerFn({ method: "POST" })
       .map(([key, v]) => {
         const [surface, prompt_version, model] = key.split("|");
         const total = v.up + v.down;
+        const enoughSamples = total >= MIN_SAMPLE_N;
         return {
           surface,
           prompt_version,
@@ -52,10 +55,11 @@ export const getAIQualityStats = createServerFn({ method: "POST" })
           up: v.up,
           down: v.down,
           total,
-          up_rate: total ? Math.round((v.up / total) * 100) : 0,
+          up_rate: enoughSamples ? Math.round((v.up / total) * 100) : null,
+          enough_samples: enoughSamples,
         };
       })
       .sort((a, b) => b.total - a.total);
 
-    return { authorized: true as const, error: null as string | null, summary, recentBad };
+    return { authorized: true as const, error: null as string | null, summary, recentBad, min_sample_n: MIN_SAMPLE_N };
   });
