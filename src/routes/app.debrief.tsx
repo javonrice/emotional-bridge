@@ -39,12 +39,20 @@ function Debrief() {
   const [stage, setStage] = useState<Stage>("input");
   const [text, setText] = useState("");
   const [debrief, setDebrief] = useState<DebriefRow | null>(null);
+  const [viewingPast, setViewingPast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const [sharing, setSharing] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const recRef = useRef<any>(null);
+  const baselineRef = useRef<string>("");
+  const committedRef = useRef<string>("");
 
   const startVoice = () => {
+    if (listening && recRef.current) {
+      try { recRef.current.stop(); } catch { /* noop */ }
+      return;
+    }
     const SR =
       (typeof window !== "undefined" &&
         ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)) ||
@@ -57,15 +65,48 @@ function Debrief() {
     rec.lang = "en-US";
     rec.interimResults = true;
     rec.continuous = true;
+    baselineRef.current = text ? text.replace(/\s+$/, "") + " " : "";
+    committedRef.current = "";
     setListening(true);
     rec.onresult = (e: any) => {
-      let chunk = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) chunk += e.results[i][0].transcript;
-      setText((prev) => (prev ? prev + " " : "") + chunk);
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        const t = r[0].transcript as string;
+        if (r.isFinal) {
+          const needsSpace = committedRef.current && !committedRef.current.endsWith(" ");
+          committedRef.current += (needsSpace ? " " : "") + t.trim();
+        } else {
+          interim += t;
+        }
+      }
+      const tail = interim ? (committedRef.current ? " " : "") + interim : "";
+      setText(baselineRef.current + committedRef.current + tail);
     };
-    rec.onend = () => setListening(false);
-    rec.onerror = () => setListening(false);
+    rec.onend = () => {
+      setListening(false);
+      setText(baselineRef.current + committedRef.current);
+      recRef.current = null;
+    };
+    rec.onerror = () => {
+      setListening(false);
+      recRef.current = null;
+    };
+    recRef.current = rec;
     rec.start();
+  };
+
+  const openSaved = (it: DebriefRow & { created_at?: string }) => {
+    setDebrief(it);
+    setViewingPast(it.id);
+    setStage("card");
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const backToList = () => {
+    setViewingPast(null);
+    setDebrief(null);
+    setStage("input");
   };
 
   const risk = useMemo(() => detectRisk(text), [text]);
