@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Mic, Share2, Lock } from "lucide-react";
+import { Mic, Share2, Lock, Volume2, Square } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toPng } from "html-to-image";
@@ -13,6 +13,7 @@ import { NotTherapyDisclaimer } from "@/components/safety/NotTherapyDisclaimer";
 import { detectRisk } from "@/lib/safety";
 import { track } from "@/lib/analytics.functions";
 import { useEntitlements } from "@/hooks/useEntitlements";
+import { useSpeech } from "@/hooks/useSpeech";
 
 export const Route = createFileRoute("/app/debrief")({
   component: Debrief,
@@ -32,6 +33,7 @@ function Debrief() {
   const historyFn = useServerFn(getDebriefHistory);
   const qc = useQueryClient();
   const ent = useEntitlements();
+  const speech = useSpeech();
   const { data: history } = useQuery({
     queryKey: ["debrief-history"],
     queryFn: () => historyFn(),
@@ -285,13 +287,33 @@ function Debrief() {
               </div>
             </div>
 
-            <button
-              onClick={handleShare}
-              disabled={sharing}
-              className="tap-scale mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-white/8 px-4 py-2.5 text-xs font-medium text-foreground disabled:opacity-50"
-            >
-              <Share2 size={14} /> {sharing ? "Preparing…" : "Share this insight"}
-            </button>
+            <div className="mt-4 flex gap-2">
+              {speech.supported && (
+                <button
+                  onClick={() => {
+                    if (speech.isSpeaking) {
+                      speech.stop();
+                    } else {
+                      void track("debrief.listen", { id: debrief.id });
+                      speech.speak(
+                        `Pattern. ${debrief.pattern}. Reframe. ${debrief.reframe}. Try next time. ${debrief.micro_action}.`,
+                      );
+                    }
+                  }}
+                  className="tap-scale flex flex-1 items-center justify-center gap-2 rounded-full bg-white/8 px-4 py-2.5 text-xs font-medium text-foreground"
+                >
+                  {speech.isSpeaking ? <Square size={14} /> : <Volume2 size={14} />}
+                  {speech.isSpeaking ? "Stop" : "Listen"}
+                </button>
+              )}
+              <button
+                onClick={handleShare}
+                disabled={sharing}
+                className="tap-scale flex flex-1 items-center justify-center gap-2 rounded-full bg-white/8 px-4 py-2.5 text-xs font-medium text-foreground disabled:opacity-50"
+              >
+                <Share2 size={14} /> {sharing ? "Preparing…" : "Share"}
+              </button>
+            </div>
 
             {ent.tier === "free" && ent.debriefsRemaining !== null && (
               <p className="mt-3 text-center text-[11px] text-muted-foreground">
@@ -313,7 +335,7 @@ function Debrief() {
             <AIFeedback surface="debrief_card" sourceId={debrief.id} />
 
 
-            <button onClick={viewingPast ? backToList : () => { setStage("input"); setText(""); setDebrief(null); }} className="mt-4 block w-full text-center text-xs text-muted-foreground">
+            <button onClick={() => { speech.stop(); if (viewingPast) { backToList(); } else { setStage("input"); setText(""); setDebrief(null); } }} className="mt-4 block w-full text-center text-xs text-muted-foreground">
               {viewingPast ? "← Back to debriefs" : "New debrief"}
             </button>
           </motion.div>
