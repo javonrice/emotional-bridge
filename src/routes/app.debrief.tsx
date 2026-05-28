@@ -230,12 +230,17 @@ function Debrief() {
                 <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Past debriefs</div>
                 <ul className="mt-3 space-y-2">
                   {history.items.map((it) => (
-                    <li key={it.id} className="rounded-2xl border border-white/8 bg-card p-4">
-                      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                        {new Date(it.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                      </div>
-                      {it.pattern && <div className="mt-1 text-sm font-medium text-foreground/90">{it.pattern}</div>}
-                      {it.micro_action && <div className="mt-1 text-xs text-primary">{it.micro_action}</div>}
+                    <li key={it.id}>
+                      <button
+                        onClick={() => openSaved(it as DebriefRow & { created_at?: string })}
+                        className="tap-scale w-full rounded-2xl border border-white/8 bg-card p-4 text-left transition-colors hover:border-primary/30"
+                      >
+                        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                          {new Date(it.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        </div>
+                        {it.pattern && <div className="mt-1 text-sm font-medium text-foreground/90">{it.pattern}</div>}
+                        {it.micro_action && <div className="mt-1 text-xs text-primary">{it.micro_action}</div>}
+                      </button>
                     </li>
                   ))}
                 </ul>
