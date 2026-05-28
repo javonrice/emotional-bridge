@@ -114,6 +114,7 @@ function Debrief() {
   const handleSubmit = async () => {
     setStage("thinking");
     setError(null);
+    setViewingPast(null);
     void track("debrief.submit", { length: text.length, risk });
     try {
       const res = await submit({ data: { text } });
