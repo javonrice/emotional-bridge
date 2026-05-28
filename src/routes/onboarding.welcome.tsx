@@ -11,7 +11,7 @@ function Welcome() {
       <div />
       <div className="flex flex-col items-center text-center">
         <div className="animate-loop-pulse">
-          <img src={loopIcon} alt="LOOP" width={128} height={128} className="h-32 w-32 rounded-3xl glow" />
+          <img src={loopIcon} alt="LOOP" width={128} height={128} className="h-32 w-32 glow" />
         </div>
         <h1 className="mt-10 text-5xl font-bold tracking-tight text-foreground">LOOP</h1>
         <p className="mt-3 text-lg text-muted-foreground">See what's running you.</p>
