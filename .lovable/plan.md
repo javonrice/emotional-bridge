@@ -1,90 +1,53 @@
+# Four fixes
 
-# LOOP UX Experience Build — Phased Plan
+## 1. Voice input duplicates every word in Debrief
 
-The spec is too big for one safe pass (touches Today, Check-in, Debrief, Insights, Profile, server stats, share export, and milestone moments). Splitting into 4 phases so each is testable end-to-end before stacking the next.
+**Cause:** `recognition.onresult` fires repeatedly while you speak. The current handler loops from `resultIndex` through all results (including interim, non-final ones) and **appends** that growing chunk to `text` each time. So as the interim transcript grows, every iteration appends the whole running phrase again — producing duplicated/triplicated words.
 
-Several spec items are already done from earlier turns:
-- Fake testimonials removed (`onboarding.proof.tsx`)
-- Fake "9,420" stat removed (`onboarding.reveal-mirror.tsx`)
-- Insights monthly empty state for new users
-- Gateway "iOS coming soon" waitlist UX
+**Fix in `src/routes/app.debrief.tsx` (`startVoice`):**
+- Track a `baselineRef` snapshotted to the textarea value when recording starts.
+- On each `onresult`, separate **final** vs **interim** results:
+  - Accumulate final transcripts into a `committedRef` string.
+  - Show interim as a live preview only.
+- Set textarea value as `baseline + committed + interim` each event (replace, don't append).
+- On `onend`, drop interim and keep `baseline + committed`.
+- Keep `interimResults = true` for live feedback, but stop the `continuous = true` runaway by clearing interim on stop.
 
-Remaining work below.
+## 2. Past debriefs aren't clickable
 
----
+In `app.debrief.tsx`, the "Past debriefs" `<li>` items are static. Make each item a button that loads that debrief into the existing card stage.
 
-## Phase 1 — Fix the Day 0 cliff (Critical + High audit items)
+- Wrap each item in a `<button>` that calls a new `openSaved(item)` handler.
+- `openSaved` sets `debrief` to the saved row, sets `stage = "card"`, scrolls to top.
+- The existing card UI already renders pattern/reframe/micro_action — reuse it. Hide share-card "today" label when viewing an old one (show the saved date instead).
+- Add a `← Back to debriefs` button on the card stage when viewing a past one (state flag `viewingPast`).
 
-Goal: a brand-new user lands on Today and never sees fake data, dead ends, or drift warnings.
+No server changes needed — `getDebriefHistory` already returns pattern/reframe/micro_action.
 
-1. **Profile stats real numbers** (`app.profile.tsx`, `checkins.functions.ts`)
-   - Add `totalDebriefs` to `getCheckinStats` return shape (count from `debriefs` table for `auth.uid()`).
-   - Replace hardcoded `47` / `12` with `stats.total` / `stats.totalDebriefs`.
+## 3. Check-in button isn't prominent enough
 
-2. **Today screen — Day 0 + checked-in-today states** (`app.today.tsx`)
-   - Derive `checkedInToday` from `stats.days` + today's local key.
-   - Replace static drift fallback with branch-by-count copy (0, <7, ≥7).
-   - Replace empty StreakRing with "Your awareness streak starts today" glyph when `streak === 0`.
-   - First-timer dismissable orientation card (localStorage flag).
-   - Free-tier pill under Debrief tile showing remaining debriefs.
-   - When already checked in: success card + "Had an urge? Talk it out →".
+On `app.today.tsx`, the daily check-in is a subtle bordered card competing with the loop card. For first-time and not-yet-checked-in users, make it the unmistakable primary action.
 
-3. **Post-check-in momentum** (`app.checkin.tsx` done state)
-   - Show updated streak prominently.
-   - Milestone copy at streak 1 / 7 / 14 / 30.
-   - Soft debrief prompt + "Not right now" → back to Today.
-   - Day 1 only: subtle "Share your start" ghost button.
+Changes (when `!checkedInToday`):
+- Replace the small card with a **full-width hero CTA**: large pill button (h-16, primary background, glow, white text) reading **"Check in now · 20 seconds"** with a subtle pulse animation when `total === 0` (first-time).
+- Move it directly under the streak ring (above the Loop card) so it's the first interactive element below the header.
+- Add a small caption underneath: "3 taps. Builds your map."
+- Demote the secondary Debrief/Insights grid below the loop card (already there).
+- When `checkedInToday`, keep current success state but add a secondary ghost button "Check in again" (see #4).
 
----
+## 4. Multiple check-ins per day
 
-## Phase 2 — Debrief polish + free-tier transparency
+Policy chosen: **allow multiple, count once for streak**. The streak logic in `getCheckinStats` already dedupes by local day, so streak is unaffected. Changes needed:
 
-Goal: free users always know where they stand; debrief becomes the primary shareable moment.
+- `app.today.tsx`: in the `checkedInToday` branch, add a small ghost button "Check in again" linking to `/app/checkin` next to the success row. Reason: mood can shift through the day.
+- `app.checkin.tsx`: after save, the "done" screen already shows streak — when this is a 2nd+ check-in today, change the headline from "Logged." to **"Updated."** and the subtext to "Second check-in today — your map gets more texture." Detect via comparing pre-save vs post-save `total` for the day, or by passing `wasAlreadyCheckedInToday` through navigation state (simplest: read `stats?.checkedInToday` *before* save into a ref).
+- Insights: no change required — multiple entries naturally enrich aggregates. (Optional follow-up: group by day in the timeline if it gets noisy — not in this scope.)
 
-1. **Debrief history visible** (`app.debrief.tsx`)
-   - Render the already-fetched history list (collapsed by default).
-2. **Share card** (`app.debrief.tsx` card stage)
-   - Add `html-to-image` dep, "Share this insight" button → `toPng()` + `navigator.share()` (fallback download).
-3. **Free-tier counters** in debrief done states
-   - 1st: "2 free debriefs remaining"
-   - 2nd: "1 free debrief remaining · Unlock unlimited"
-   - 3rd: full value card → soft paywall
+No DB / RLS / server function changes required for #4 — `saveCheckin` already inserts a new row per call.
 
----
+## Files touched
+- `src/routes/app.debrief.tsx` — voice fix + clickable history + view-saved state
+- `src/routes/app.today.tsx` — hero CTA + "check in again" affordance
+- `src/routes/app.checkin.tsx` — "Updated." copy on 2nd+ same-day save
 
-## Phase 3 — Milestones + Insights progress
-
-Goal: streak 7 / 14 / 30 each feel like a moment; loop tab shows progress toward first map.
-
-1. **Milestone screens** — full-screen overlay after check-in at 7 / 14 / 30 with large ring, label ("WEEK ONE", etc.), 1-line data reflection, Share CTA, "Continue".
-2. **Day 14** auto-deep-link to Insights → Loop tab.
-3. **Loop tab progress counter** (`app.insights.tsx`) — "X of 3 check-ins" when under threshold.
-4. **Today loop card** uses real drift language once `total ≥ 14` and `loop?.summary` exists.
-
----
-
-## Phase 4 — Monthly Report (Day 30+) Spotify-Wrapped moment
-
-Goal: 5-card swipeable monthly report, each card individually shareable.
-
-1. AI-generated monthly summary server fn — pulls last-30-day check-ins + computes shift (first 15 vs last 15), top gateway, dominant pattern.
-2. 5 cards: The Number / Most Loud / Your Pattern / Top Gateway / The Shift — dark gradient, LOOP watermark, share button per card.
-3. "Share all" → collage export.
-4. Day 30 check-in done state CTA → Monthly tab.
-
----
-
-## Technical Notes
-
-- **DB**: Phase 1 needs `getCheckinStats` to also query `debriefs` (no schema change — table exists). Phase 4 may need a `monthly_reports` cache table to avoid re-running the AI summary on every open.
-- **Share export**: `html-to-image` (~30 KB gzip) — already in package spec, not installed.
-- **Milestone overlay**: new shared `MilestoneSheet` component reused across check-in done + deep-link landings.
-- **Free-tier**: `useEntitlements` already exposes tier; debrief count comes from new `totalDebriefs` in stats.
-
----
-
-## Recommendation
-
-Ship **Phase 1 first** — it removes every "this looks broken to a new user" signal, which is the single highest-leverage change. Phases 2–4 are additive momentum once Day 0 is solid.
-
-Approve to start Phase 1, or tell me to bundle Phase 1+2 or run a different order.
+No migrations, no server function changes.
