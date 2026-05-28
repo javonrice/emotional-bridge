@@ -304,6 +304,8 @@ function Debrief() {
                         setError("Voice playback is paused for the day. Try again tomorrow.");
                       } else if (result.error === "too_long") {
                         setError("This debrief is too long for voice playback.");
+                      } else if (result.error === "playback_blocked") {
+                        setError("Tap Listen again to play.");
                       } else {
                         setError("Voice playback failed. Try again.");
                       }
