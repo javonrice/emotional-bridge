@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Mic, Share2, Lock, Volume2, Square, Loader2 } from "lucide-react";
+import { Mic, Share2, Lock } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toPng } from "html-to-image";
@@ -13,7 +13,7 @@ import { NotTherapyDisclaimer } from "@/components/safety/NotTherapyDisclaimer";
 import { detectRisk } from "@/lib/safety";
 import { track } from "@/lib/analytics.functions";
 import { useEntitlements } from "@/hooks/useEntitlements";
-import { useSpeech } from "@/hooks/useSpeech";
+
 
 export const Route = createFileRoute("/app/debrief")({
   component: Debrief,
@@ -33,7 +33,7 @@ function Debrief() {
   const historyFn = useServerFn(getDebriefHistory);
   const qc = useQueryClient();
   const ent = useEntitlements();
-  const speech = useSpeech();
+  
   const { data: history } = useQuery({
     queryKey: ["debrief-history"],
     queryFn: () => historyFn(),
@@ -288,42 +288,6 @@ function Debrief() {
             </div>
 
             <div className="mt-4 flex gap-2">
-              {speech.supported && (
-                <button
-                  onClick={async () => {
-                    if (speech.isSpeaking || speech.isLoading) {
-                      speech.stop();
-                      return;
-                    }
-                    void track("debrief.listen", { id: debrief.id });
-                    const result = await speech.speak(debrief.id);
-                    if (!result.ok) {
-                      if (result.error === "quota_exceeded") {
-                        setError("You've used your voice playback for the month. Upgrade for more.");
-                      } else if (result.error === "tts_unavailable") {
-                        setError("Voice playback is paused for the day. Try again tomorrow.");
-                      } else if (result.error === "too_long") {
-                        setError("This debrief is too long for voice playback.");
-                      } else if (result.error === "playback_blocked") {
-                        setError("Tap Listen again to play.");
-                      } else {
-                        setError("Voice playback failed. Try again.");
-                      }
-                    }
-                  }}
-                  disabled={false}
-                  className="tap-scale flex flex-1 items-center justify-center gap-2 rounded-full bg-white/8 px-4 py-2.5 text-xs font-medium text-foreground"
-                >
-                  {speech.isLoading ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : speech.isSpeaking ? (
-                    <Square size={14} />
-                  ) : (
-                    <Volume2 size={14} />
-                  )}
-                  {speech.isLoading ? "Loading voice…" : speech.isSpeaking ? "Stop" : "Listen"}
-                </button>
-              )}
               <button
                 onClick={handleShare}
                 disabled={sharing}
@@ -353,7 +317,7 @@ function Debrief() {
             <AIFeedback surface="debrief_card" sourceId={debrief.id} />
 
 
-            <button onClick={() => { speech.stop(); if (viewingPast) { backToList(); } else { setStage("input"); setText(""); setDebrief(null); } }} className="mt-4 block w-full text-center text-xs text-muted-foreground">
+            <button onClick={() => { if (viewingPast) { backToList(); } else { setStage("input"); setText(""); setDebrief(null); } }} className="mt-4 block w-full text-center text-xs text-muted-foreground">
               {viewingPast ? "← Back to debriefs" : "New debrief"}
             </button>
           </motion.div>
