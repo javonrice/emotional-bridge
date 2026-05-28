@@ -133,12 +133,14 @@ function CheckIn() {
         </motion.div>
 
         <h2 className="mt-6 text-2xl font-bold leading-tight">
-          {milestone ? milestone.headline : "Logged."}
+          {milestone ? milestone.headline : wasAlreadyCheckedInRef.current ? "Updated." : "Logged."}
         </h2>
         <p className="mt-2 max-w-xs text-sm text-muted-foreground">
           {milestone
             ? "Every check-in builds your map. Your loop is getting clearer."
-            : `${streak}-day streak. Every check-in builds your map.`}
+            : wasAlreadyCheckedInRef.current
+              ? "Another check-in today — your map gets more texture."
+              : `${streak}-day streak. Every check-in builds your map.`}
         </p>
         {error && <p className="mt-3 max-w-xs text-xs text-destructive">{error}</p>}
 
