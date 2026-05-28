@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PaywallRouteImport } from './routes/paywall'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as CrisisRouteImport } from './routes/crisis'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
@@ -52,6 +53,11 @@ const PaywallRoute = PaywallRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CrisisRoute = CrisisRouteImport.update({
@@ -220,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/crisis': typeof CrisisRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/paywall': typeof PaywallRoute
   '/admin/ai-quality': typeof AdminAiQualityRoute
@@ -256,6 +263,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/crisis': typeof CrisisRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/paywall': typeof PaywallRoute
   '/admin/ai-quality': typeof AdminAiQualityRoute
@@ -293,6 +301,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/crisis': typeof CrisisRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/paywall': typeof PaywallRoute
   '/admin/ai-quality': typeof AdminAiQualityRoute
@@ -331,6 +340,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/crisis'
+    | '/forgot-password'
     | '/login'
     | '/paywall'
     | '/admin/ai-quality'
@@ -367,6 +377,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/crisis'
+    | '/forgot-password'
     | '/login'
     | '/paywall'
     | '/admin/ai-quality'
@@ -403,6 +414,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/crisis'
+    | '/forgot-password'
     | '/login'
     | '/paywall'
     | '/admin/ai-quality'
@@ -440,6 +452,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   CrisisRoute: typeof CrisisRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   PaywallRoute: typeof PaywallRoute
   AdminAiQualityRoute: typeof AdminAiQualityRoute
@@ -482,6 +495,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/crisis': {
@@ -733,6 +753,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   CrisisRoute: CrisisRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   PaywallRoute: PaywallRoute,
   AdminAiQualityRoute: AdminAiQualityRoute,
