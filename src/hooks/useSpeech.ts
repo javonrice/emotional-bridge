@@ -3,6 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { synthesizeDebrief } from "@/lib/tts.functions";
 
 const urlCache = new Map<string, string>(); // debriefId -> signed URL (session)
+const SILENT_AUDIO_SRC =
+  "data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQ4AAAAAAAAAAAAAAAAAAA==";
 
 export type SpeakError =
   | "not_found"
@@ -59,8 +61,13 @@ export function useSpeech() {
       }
       const audio = new Audio();
       audio.preload = "auto";
+      audio.src = SILENT_AUDIO_SRC;
+      audio.muted = true;
       audioRef.current = audio;
       audio.onended = () => setIsSpeaking(false);
+      const unlockPromise = audio.play().catch((playErr) => {
+        console.warn("[useSpeech] initial play() blocked:", playErr);
+      });
 
       cancelledRef.current = false;
       setIsLoading(true);
@@ -88,8 +95,16 @@ export function useSpeech() {
 
         audio.onerror = () => {
           setIsSpeaking(false);
+          setIsLoading(false);
           urlCache.delete(debriefId); // signed URL may have expired
         };
+        await unlockPromise;
+        if (cancelledRef.current || audioRef.current !== audio) {
+          return { ok: true };
+        }
+        audio.pause();
+        audio.currentTime = 0;
+        audio.muted = false;
         audio.src = url;
 
         setIsLoading(false);
