@@ -53,6 +53,9 @@ export function getOnboardingState(): State {
 export function setLastStep(path: string) {
   if (typeof window === "undefined") return;
   if (!path.startsWith("/onboarding/")) return;
+  // Don't treat the welcome screen as a resumable step — a returning user who
+  // simply landed on welcome and then signed in shouldn't be bounced back here.
+  if (path === "/onboarding/welcome") return;
   localStorage.setItem(LAST_STEP_KEY, path);
   emit();
 }
