@@ -57,7 +57,11 @@ function CheckIn() {
       setTimeout(() => setStep(step + 1), 220);
       return;
     }
-    // last step → persist
+    // last step → persist; capture pre-save state for "Updated." copy
+    try {
+      const pre = await statsFn({ data: { tz_offset_minutes: tzOffset } });
+      wasAlreadyCheckedInRef.current = !!pre?.checkedInToday;
+    } catch { /* noop */ }
     try {
       const res = await save({
         data: {
