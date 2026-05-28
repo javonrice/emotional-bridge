@@ -18,7 +18,24 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
   }
 });
 
+// Global session-expiry handler: when any server fn throws an Unauthorized
+// error, redirect to /login with the current path as the redirect param.
+const handleUnauthorized = createMiddleware({ type: "function" }).client(async ({ next }) => {
+  try {
+    return await next();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (typeof window !== "undefined" && /unauthorized|401/i.test(msg)) {
+      const here = window.location.pathname + window.location.search;
+      if (!window.location.pathname.startsWith("/login")) {
+        window.location.replace(`/login?redirect=${encodeURIComponent(here)}`);
+      }
+    }
+    throw err;
+  }
+});
+
 export const startInstance = createStart(() => ({
   requestMiddleware: [errorMiddleware],
-  functionMiddleware: [attachSupabaseAuth],
+  functionMiddleware: [attachSupabaseAuth, handleUnauthorized],
 }));

@@ -17,24 +17,27 @@ export type OnboardingAnswers = {
 const KEY = "loop.onboarding.v1";
 const DONE_KEY = "loop.onboarded.v1";
 const STREAK_KEY = "loop.streak.v1";
+const LAST_STEP_KEY = "loop.onboarding.lastStep.v1";
 
 type State = {
   answers: OnboardingAnswers;
   done: boolean;
+  lastStep: string | null;
 };
 
 const listeners = new Set<() => void>();
 function emit() { listeners.forEach((l) => l()); }
 
 function read(): State {
-  if (typeof window === "undefined") return { answers: {}, done: false };
+  if (typeof window === "undefined") return { answers: {}, done: false, lastStep: null };
   try {
     const raw = localStorage.getItem(KEY);
     const answers = raw ? (JSON.parse(raw) as OnboardingAnswers) : {};
     const done = localStorage.getItem(DONE_KEY) === "1";
-    return { answers, done };
+    const lastStep = localStorage.getItem(LAST_STEP_KEY);
+    return { answers, done, lastStep };
   } catch {
-    return { answers: {}, done: false };
+    return { answers: {}, done: false, lastStep: null };
   }
 }
 
@@ -43,11 +46,22 @@ function subscribe(cb: () => void) {
   return () => listeners.delete(cb);
 }
 
+export function getOnboardingState(): State {
+  return read();
+}
+
+export function setLastStep(path: string) {
+  if (typeof window === "undefined") return;
+  if (!path.startsWith("/onboarding/")) return;
+  localStorage.setItem(LAST_STEP_KEY, path);
+  emit();
+}
+
 export function useOnboarding() {
   const state = useSyncExternalStore(
     subscribe,
     () => JSON.stringify(read()),
-    () => JSON.stringify({ answers: {}, done: false }),
+    () => JSON.stringify({ answers: {}, done: false, lastStep: null }),
   );
   const parsed: State = JSON.parse(state);
   return parsed;
@@ -62,6 +76,7 @@ export function setAnswer<K extends keyof OnboardingAnswers>(key: K, value: Onbo
 
 export function completeOnboarding() {
   localStorage.setItem(DONE_KEY, "1");
+  localStorage.removeItem(LAST_STEP_KEY);
   emit();
 }
 
@@ -69,6 +84,7 @@ export function resetOnboarding() {
   localStorage.removeItem(KEY);
   localStorage.removeItem(DONE_KEY);
   localStorage.removeItem(STREAK_KEY);
+  localStorage.removeItem(LAST_STEP_KEY);
   emit();
 }
 

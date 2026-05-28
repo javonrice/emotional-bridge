@@ -132,6 +132,18 @@ async function handleLifetimeCheckout(session: any, env: StripeEnv) {
 
 async function handleWebhook(req: Request, env: StripeEnv) {
   const event = await verifyWebhook(req, env);
+
+  // Idempotency: skip if this event id has already been processed.
+  const { data: existing } = await getSupabase()
+    .from("stripe_events")
+    .select("event_id")
+    .eq("event_id", (event as any).id)
+    .maybeSingle();
+  if (existing) {
+    console.log("Duplicate Stripe event, skipping:", (event as any).id);
+    return;
+  }
+
   switch (event.type) {
     case "customer.subscription.created":
       await handleSubscriptionCreated(event.data.object, env);
@@ -148,6 +160,10 @@ async function handleWebhook(req: Request, env: StripeEnv) {
     default:
       console.log("Unhandled event:", event.type);
   }
+
+  await getSupabase()
+    .from("stripe_events")
+    .insert({ event_id: (event as any).id, type: event.type, environment: env });
 }
 
 export const Route = createFileRoute("/api/public/payments/webhook")({

@@ -148,7 +148,17 @@ function Debrief() {
             >
               <Mic size={14} aria-hidden="true" /> {listening ? "Listening…" : "Speak instead"}
             </button>
-            {error && <p className="mt-3 text-xs text-destructive" role="alert">{error}</p>}
+            {error && (
+              <div className="mt-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3" role="alert">
+                <p className="text-xs text-destructive">{error}</p>
+                <button
+                  onClick={handleSubmit}
+                  className="mt-2 text-xs font-semibold text-primary underline-offset-2 hover:underline"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
 
             <button
               onClick={handleSubmit}

@@ -46,13 +46,14 @@ function AIQualityPage() {
     setLoading(true);
     load({ data: { days } })
       .then((res) => {
-        if (!res.authorized) {
-          setAuthorized(false);
-          return;
-        }
         setAuthorized(true);
         setSummary(res.summary as Summary[]);
         setBad((res.recentBad ?? []) as BadRow[]);
+      })
+      .catch((e) => {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes("403") || msg.toLowerCase().includes("forbidden")) setAuthorized(false);
+        else setAuthorized(false);
       })
       .finally(() => setLoading(false));
   }, [days, load]);
