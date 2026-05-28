@@ -141,20 +141,32 @@ function Today() {
             </div>
             <ChevronRight className="text-success" />
           </Link>
+          <Link
+            to="/app/checkin"
+            className="tap-scale mt-3 inline-flex items-center gap-1 text-xs font-medium text-success/90 underline-offset-2 hover:underline"
+          >
+            Check in again
+          </Link>
         </div>
       ) : (
-        <Link
-          to="/app/checkin"
-          className="tap-scale mt-6 flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/10 p-5"
-        >
-          <div>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
-              <Sparkles size={14} /> Daily check-in
-            </div>
-            <div className="mt-1 text-base font-semibold text-foreground">3 taps. About 20 seconds.</div>
-          </div>
-          <ChevronRight className="text-primary" />
-        </Link>
+        <div className="mt-6">
+          <motion.div
+            animate={total === 0 ? { scale: [1, 1.02, 1] } : undefined}
+            transition={total === 0 ? { duration: 2.2, repeat: Infinity, ease: "easeInOut" } : undefined}
+          >
+            <Link
+              to="/app/checkin"
+              className="ios-pill tap-scale flex h-16 w-full items-center justify-center gap-2 bg-primary text-base font-semibold text-primary-foreground glow"
+            >
+              <Sparkles size={18} aria-hidden="true" />
+              {total === 0 ? "Start your first check-in" : "Check in now · 20 seconds"}
+              <ChevronRight size={18} aria-hidden="true" />
+            </Link>
+          </motion.div>
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            3 taps. Builds your map.
+          </p>
+        </div>
       )}
 
       <div className="mt-3 rounded-2xl border border-white/8 bg-card p-5">

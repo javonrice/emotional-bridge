@@ -39,12 +39,20 @@ function Debrief() {
   const [stage, setStage] = useState<Stage>("input");
   const [text, setText] = useState("");
   const [debrief, setDebrief] = useState<DebriefRow | null>(null);
+  const [viewingPast, setViewingPast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const [sharing, setSharing] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const recRef = useRef<any>(null);
+  const baselineRef = useRef<string>("");
+  const committedRef = useRef<string>("");
 
   const startVoice = () => {
+    if (listening && recRef.current) {
+      try { recRef.current.stop(); } catch { /* noop */ }
+      return;
+    }
     const SR =
       (typeof window !== "undefined" &&
         ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)) ||
@@ -57,15 +65,48 @@ function Debrief() {
     rec.lang = "en-US";
     rec.interimResults = true;
     rec.continuous = true;
+    baselineRef.current = text ? text.replace(/\s+$/, "") + " " : "";
+    committedRef.current = "";
     setListening(true);
     rec.onresult = (e: any) => {
-      let chunk = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) chunk += e.results[i][0].transcript;
-      setText((prev) => (prev ? prev + " " : "") + chunk);
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        const t = r[0].transcript as string;
+        if (r.isFinal) {
+          const needsSpace = committedRef.current && !committedRef.current.endsWith(" ");
+          committedRef.current += (needsSpace ? " " : "") + t.trim();
+        } else {
+          interim += t;
+        }
+      }
+      const tail = interim ? (committedRef.current ? " " : "") + interim : "";
+      setText(baselineRef.current + committedRef.current + tail);
     };
-    rec.onend = () => setListening(false);
-    rec.onerror = () => setListening(false);
+    rec.onend = () => {
+      setListening(false);
+      setText(baselineRef.current + committedRef.current);
+      recRef.current = null;
+    };
+    rec.onerror = () => {
+      setListening(false);
+      recRef.current = null;
+    };
+    recRef.current = rec;
     rec.start();
+  };
+
+  const openSaved = (it: DebriefRow & { created_at?: string }) => {
+    setDebrief(it);
+    setViewingPast(it.id);
+    setStage("card");
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const backToList = () => {
+    setViewingPast(null);
+    setDebrief(null);
+    setStage("input");
   };
 
   const risk = useMemo(() => detectRisk(text), [text]);
@@ -73,6 +114,7 @@ function Debrief() {
   const handleSubmit = async () => {
     setStage("thinking");
     setError(null);
+    setViewingPast(null);
     void track("debrief.submit", { length: text.length, risk });
     try {
       const res = await submit({ data: { text } });
@@ -189,12 +231,17 @@ function Debrief() {
                 <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Past debriefs</div>
                 <ul className="mt-3 space-y-2">
                   {history.items.map((it) => (
-                    <li key={it.id} className="rounded-2xl border border-white/8 bg-card p-4">
-                      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                        {new Date(it.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                      </div>
-                      {it.pattern && <div className="mt-1 text-sm font-medium text-foreground/90">{it.pattern}</div>}
-                      {it.micro_action && <div className="mt-1 text-xs text-primary">{it.micro_action}</div>}
+                    <li key={it.id}>
+                      <button
+                        onClick={() => openSaved(it as DebriefRow & { created_at?: string })}
+                        className="tap-scale w-full rounded-2xl border border-white/8 bg-card p-4 text-left transition-colors hover:border-primary/30"
+                      >
+                        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                          {new Date(it.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        </div>
+                        {it.pattern && <div className="mt-1 text-sm font-medium text-foreground/90">{it.pattern}</div>}
+                        {it.micro_action && <div className="mt-1 text-xs text-primary">{it.micro_action}</div>}
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -218,7 +265,11 @@ function Debrief() {
           <motion.div key="c" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
             <div ref={cardRef} className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-[#0A0A0F] to-[#1A1540] p-6">
               <div className="absolute right-4 top-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">LOOP</div>
-              <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Debrief · today</div>
+              <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Debrief · {viewingPast && (debrief as any).created_at
+                  ? new Date((debrief as any).created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+                  : "today"}
+              </div>
 
               <div className="mt-5 text-xs uppercase tracking-[0.16em] text-muted-foreground">Pattern</div>
               <p className="mt-2 text-[15px] leading-relaxed text-foreground/90">{debrief.pattern}</p>
@@ -262,8 +313,8 @@ function Debrief() {
             <AIFeedback surface="debrief_card" sourceId={debrief.id} />
 
 
-            <button onClick={() => { setStage("input"); setText(""); setDebrief(null); }} className="mt-4 block w-full text-center text-xs text-muted-foreground">
-              New debrief
+            <button onClick={viewingPast ? backToList : () => { setStage("input"); setText(""); setDebrief(null); }} className="mt-4 block w-full text-center text-xs text-muted-foreground">
+              {viewingPast ? "← Back to debriefs" : "New debrief"}
             </button>
           </motion.div>
         )}
