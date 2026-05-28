@@ -264,7 +264,11 @@ function Debrief() {
           <motion.div key="c" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
             <div ref={cardRef} className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-[#0A0A0F] to-[#1A1540] p-6">
               <div className="absolute right-4 top-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">LOOP</div>
-              <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Debrief · today</div>
+              <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Debrief · {viewingPast && (debrief as any).created_at
+                  ? new Date((debrief as any).created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+                  : "today"}
+              </div>
 
               <div className="mt-5 text-xs uppercase tracking-[0.16em] text-muted-foreground">Pattern</div>
               <p className="mt-2 text-[15px] leading-relaxed text-foreground/90">{debrief.pattern}</p>
