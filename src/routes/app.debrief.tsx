@@ -33,6 +33,7 @@ function Debrief() {
   const historyFn = useServerFn(getDebriefHistory);
   const qc = useQueryClient();
   const ent = useEntitlements();
+  const speech = useSpeech();
   const { data: history } = useQuery({
     queryKey: ["debrief-history"],
     queryFn: () => historyFn(),
