@@ -312,8 +312,8 @@ function Debrief() {
             <AIFeedback surface="debrief_card" sourceId={debrief.id} />
 
 
-            <button onClick={() => { setStage("input"); setText(""); setDebrief(null); }} className="mt-4 block w-full text-center text-xs text-muted-foreground">
-              New debrief
+            <button onClick={viewingPast ? backToList : () => { setStage("input"); setText(""); setDebrief(null); }} className="mt-4 block w-full text-center text-xs text-muted-foreground">
+              {viewingPast ? "← Back to debriefs" : "New debrief"}
             </button>
           </motion.div>
         )}
