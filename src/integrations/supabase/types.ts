@@ -416,6 +416,72 @@ export type Database = {
         }
         Relationships: []
       }
+      tts_cache: {
+        Row: {
+          audio_path: string
+          chars: number
+          content_hash: string
+          created_at: string
+          hit_count: number
+          last_used_at: string
+        }
+        Insert: {
+          audio_path: string
+          chars: number
+          content_hash: string
+          created_at?: string
+          hit_count?: number
+          last_used_at?: string
+        }
+        Update: {
+          audio_path?: string
+          chars?: number
+          content_hash?: string
+          created_at?: string
+          hit_count?: number
+          last_used_at?: string
+        }
+        Relationships: []
+      }
+      tts_global_usage: {
+        Row: {
+          chars_used: number
+          day: string
+          updated_at: string
+        }
+        Insert: {
+          chars_used?: number
+          day: string
+          updated_at?: string
+        }
+        Update: {
+          chars_used?: number
+          day?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tts_usage: {
+        Row: {
+          chars_used: number
+          month: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chars_used?: number
+          month: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chars_used?: number
+          month?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

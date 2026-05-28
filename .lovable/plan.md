@@ -1,43 +1,102 @@
 ## Goal
 
-Replace the robotic Web Speech voice on the debrief Listen button with **Kokoro TTS** — a high-quality neural voice that runs entirely in the user's browser. Free forever, no API key, no server.
+Switch the debrief Listen button to **ElevenLabs** with three cost controls baked in from day one: server-side caching, per-user monthly quota, and a global daily ceiling.
 
-## How it works
+## Setup needed from you
 
-Kokoro is an ~82M-param neural TTS model from Hugging Face. It runs via `kokoro-js` (which uses `transformers.js` under the hood) — WebGPU if available, WASM fallback otherwise. First use downloads the model (~80–300MB) and caches it in the browser; subsequent uses are instant.
+Add your `ELEVENLABS_API_KEY` as a secret. I'll prompt for it after you approve. Get it from elevenlabs.io → Profile → API Keys.
 
-## Changes
+## Architecture
 
-1. **Install** `kokoro-js` via `bun add`.
+```text
+Listen click
+  → server fn synthesizeDebrief({ debriefId })
+      → check global daily cap (kill switch)
+      → check user monthly quota
+      → check tts_cache for sha256(voice+model+text) hit
+          ├─ HIT  → return cached MP3 URL (free)
+          └─ MISS → call ElevenLabs → store MP3 → record usage → return URL
+  → browser plays MP3 from data URI or signed URL
+```
 
-2. **Rewrite `src/hooks/useSpeech.ts`** to wrap Kokoro instead of `speechSynthesis`:
-   - Lazy-load the model on first `speak()` call (not on mount) so the page stays fast.
-   - Cache the model instance in a module-level singleton — only loaded once per session.
-   - Expose the same API the debrief screen already uses: `supported`, `isSpeaking`, `speak(text)`, `stop()`.
-   - Add a new `isLoading` flag for the first-call download/warm-up so the button can show a spinner.
-   - Default voice: `af_heart` (warm female, the most natural-sounding default in Kokoro). 
-   - Play via a single `HTMLAudioElement`; `stop()` pauses and clears it.
-   - Graceful fallback to Web Speech if Kokoro fails to load (e.g. very old browser, offline first use) so the button never breaks.
+## Database changes (one migration)
 
-3. **Update the Listen button in `src/routes/app.debrief.tsx`**:
-   - Show "Loading voice…" with the existing `Loader2` spinner on the first click while the model downloads.
-   - Otherwise unchanged — same Listen / Stop toggle, same analytics event, same stop-on-navigate behavior.
+1. **`tts_cache`** — cached audio keyed by content hash.
+   - `content_hash` (PK, text) — `sha256(voiceId + model + text)`
+   - `audio_path` (text) — Storage path for the MP3
+   - `chars` (int), `created_at`, `last_used_at`, `hit_count`
+   - RLS: `authenticated` can read; service role writes (only the server fn touches it).
 
-## Trade-offs (worth knowing)
+2. **`tts_usage`** — per-user monthly char counter.
+   - `user_id`, `month` (date, first of month), `chars_used` (int)
+   - PK: `(user_id, month)`
+   - RLS: users read own; service role writes.
 
-- **First use is slow**: 80–300MB download + ~1–3s warm-up. Cached after that. The loading state makes this visible instead of confusing.
-- **Modern browsers only**: Chrome/Edge/Safari 17+/Firefox recent. Falls back to Web Speech on older browsers.
-- **Low-end Android**: may be sluggish or run out of memory. Fallback covers this.
-- **No streaming**: the full audio clip is generated before playback starts (a few seconds for a typical debrief). Acceptable for short paragraphs.
+3. **`tts_global_usage`** — app-wide daily counter for the kill switch.
+   - `day` (date, PK), `chars_used` (int)
+   - RLS: admin reads; service role writes.
+
+4. **Storage bucket** `tts-cache` (private). Signed URLs (1h) returned to the client.
+
+## Server function `src/lib/tts.functions.ts`
+
+`synthesizeDebrief({ debriefId })`, auth-protected (`requireSupabaseAuth`):
+
+1. Load the debrief row, verify it belongs to the user, build the text (`Pattern… Reframe… Try next time…`).
+2. Compute `content_hash = sha256(voiceId + model + text)`.
+3. Cache hit? Bump `hit_count` + `last_used_at`, return signed URL. Done.
+4. Cache miss → run the checks:
+   - **Per-request cap**: text length ≤ 800 chars. Reject if longer.
+   - **Global daily cap**: `tts_global_usage.chars_used + len > 200_000` (configurable via `TTS_DAILY_CHAR_CAP` env) → return `{ error: "tts_unavailable" }`.
+   - **User monthly quota**:
+     - Free tier: 5,000 chars/mo (~12 listens)
+     - Paid tier: 50,000 chars/mo (~125 listens)
+     - Over quota → return `{ error: "quota_exceeded", upgrade: true }`.
+5. Call ElevenLabs (Sarah voice `EXAVITQu4vr4xnSDxMaL`, model `eleven_turbo_v2_5`, format `mp3_22050_32`).
+6. Upload MP3 to `tts-cache/{hash}.mp3` via `supabaseAdmin`.
+7. Insert into `tts_cache`, increment `tts_usage` and `tts_global_usage` (upsert).
+8. Return `{ audioUrl: signedUrl, cached: false, remainingChars }`.
+
+Read entitlements via the same path `useEntitlements` uses on the server (or inline `has_active_subscription`).
+
+## Hook `src/hooks/useSpeech.ts` (rewrite)
+
+- Same public shape: `supported`, `isSpeaking`, `isLoading`, `speak(debriefId)`, `stop()`.
+- **Change**: `speak` takes a `debriefId` (not raw text) so the server controls the exact characters billed.
+- Calls the server fn, plays returned signed URL via `<audio>`.
+- Surfaces clean toast messages for `quota_exceeded` ("You've used your monthly listens — upgrade for more") and `tts_unavailable` ("Voice playback is paused for the day").
+- In-memory `Map<debriefId, signedUrl>` so re-clicking in the same session skips even the server roundtrip.
+
+## Debrief screen `src/routes/app.debrief.tsx`
+
+- `speech.speak(debrief.id)` instead of raw text.
+- Show a tiny "X listens left this month" caption under the button for free users when remaining ≤ 3 (mirrors the existing debrief-remaining UX).
+- Toast for quota/unavailable errors.
+
+## Cleanup
+
+- Remove `kokoro-js` dependency.
+
+## Configurable limits (env vars, all optional with sane defaults)
+
+- `TTS_FREE_MONTHLY_CHARS` (default 5000)
+- `TTS_PAID_MONTHLY_CHARS` (default 50000)
+- `TTS_DAILY_CHAR_CAP` (default 200000)
+- `TTS_MAX_CHARS_PER_REQUEST` (default 800)
 
 ## Files
 
-- `src/hooks/useSpeech.ts` — rewrite (Kokoro + Web Speech fallback).
-- `src/routes/app.debrief.tsx` — small button tweak for the loading state.
-- `package.json` — add `kokoro-js`.
+- New migration: `tts_cache`, `tts_usage`, `tts_global_usage`, storage bucket, RLS, GRANTs.
+- `src/lib/tts.functions.ts` (new) — server function.
+- `src/lib/tts.server.ts` (new) — ElevenLabs client + cache helpers.
+- `src/hooks/useSpeech.ts` — rewrite.
+- `src/routes/app.debrief.tsx` — pass `debrief.id`, add quota messaging.
+- `package.json` — remove `kokoro-js`.
 
-## Out of scope
+## Cost math at scale
 
-- No voice picker UI (one good default; can add later).
-- No server-side TTS.
-- No changes to any other screen.
+With caching + quotas, **steady-state cost ≈ paid users × ~$0.05/mo** in the worst case (every paid user maxes their 50k chars on uncached content). Free tier is bounded by the user quota × free user count, and the global cap is the seat belt: even worst-case spike costs ≤ **$3/day** at the default 200k cap.
+
+## Note on rate limiting
+
+The platform doesn't have proper rate-limiting primitives yet, so the per-user quota and global cap are implemented as ad-hoc counter rows in Postgres. This is fine for cost control but isn't a defense against a determined attacker — they'd be limited by the global cap, which is the real seat belt.
