@@ -57,7 +57,11 @@ function Paywall() {
 
   const skip = () => {
     completeOnboarding();
-    nav({ to: "/app/today" });
+    if (source === "onboarding" || typeof window === "undefined" || window.history.length <= 1) {
+      nav({ to: "/app/today" });
+      return;
+    }
+    router.history.back();
   };
 
   return (
