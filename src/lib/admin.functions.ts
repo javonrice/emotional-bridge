@@ -20,7 +20,9 @@ export const getAIQualityStats = createServerFn({ method: "POST" })
       .eq("user_id", userId)
       .eq("role", "admin")
       .maybeSingle();
-    if (!roleRow) return { authorized: false as const };
+    if (!roleRow) {
+      throw new Response("Forbidden", { status: 403 });
+    }
 
     const since = new Date(Date.now() - data.days * 24 * 60 * 60 * 1000).toISOString();
     const { data: rows, error } = await supabase
