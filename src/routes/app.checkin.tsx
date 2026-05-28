@@ -39,6 +39,7 @@ function CheckIn() {
   const [picks, setPicks] = useState<Record<string, string>>({});
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const wasAlreadyCheckedInRef = useRef(false);
 
   const current = STEPS[step];
 
