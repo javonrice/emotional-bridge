@@ -141,13 +141,13 @@ function Paywall() {
         >
           {plan === "annual" ? "Start 7-day free trial" : plan === "lifetime" ? "Get lifetime access" : "Start membership"}
         </button>
-        <button onClick={() => setShowSheet(true)} className="mt-2 block w-full text-center text-xs text-muted-foreground/70">
-          Not now
+        <button onClick={skip} className="mt-2 block w-full text-center text-xs text-muted-foreground/70">
+          Not now — continue with limited access
         </button>
       </div>
 
       <AnimatePresence>
-        {showSheet && <Objection onClose={() => setShowSheet(false)} onSkip={start} />}
+        {showSheet && <Objection onClose={() => setShowSheet(false)} onSkip={skip} />}
       </AnimatePresence>
 
       <AnimatePresence>
