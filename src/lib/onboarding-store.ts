@@ -76,6 +76,7 @@ export function setAnswer<K extends keyof OnboardingAnswers>(key: K, value: Onbo
 
 export function completeOnboarding() {
   localStorage.setItem(DONE_KEY, "1");
+  localStorage.removeItem(LAST_STEP_KEY);
   emit();
 }
 
@@ -83,6 +84,7 @@ export function resetOnboarding() {
   localStorage.removeItem(KEY);
   localStorage.removeItem(DONE_KEY);
   localStorage.removeItem(STREAK_KEY);
+  localStorage.removeItem(LAST_STEP_KEY);
   emit();
 }
 
