@@ -1,5 +1,36 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+// ---------- Kokoro singleton (loaded once per session) ----------
+let kokoroPromise: Promise<any> | null = null;
+
+async function loadKokoro(): Promise<any> {
+  if (kokoroPromise) return kokoroPromise;
+  kokoroPromise = (async () => {
+    const { KokoroTTS } = await import("kokoro-js");
+    // Prefer WebGPU, fall back to wasm. q8 is a good size/quality tradeoff (~85MB).
+    const hasWebGPU =
+      typeof navigator !== "undefined" && (navigator as any).gpu != null;
+    const device: "webgpu" | "wasm" = hasWebGPU ? "webgpu" : "wasm";
+    try {
+      return await KokoroTTS.from_pretrained(
+        "onnx-community/Kokoro-82M-v1.0-ONNX",
+        { dtype: "q8", device },
+      );
+    } catch (err) {
+      // If webgpu init fails, retry on wasm once.
+      if (device === "webgpu") {
+        return await KokoroTTS.from_pretrained(
+          "onnx-community/Kokoro-82M-v1.0-ONNX",
+          { dtype: "q8", device: "wasm" },
+        );
+      }
+      throw err;
+    }
+  })();
+  return kokoroPromise;
+}
+
+// ---------- Web Speech fallback ----------
 const PREMIUM_PATTERN = /enhanced|premium|neural|natural|siri/i;
 const KNOWN_GOOD_PATTERN = /samantha|karen|daniel|google|aria|jenny|ava|evan/i;
 
@@ -7,7 +38,6 @@ function pickBestVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | n
   if (!voices.length) return null;
   const english = voices.filter((v) => v.lang?.toLowerCase().startsWith("en"));
   const pool = english.length ? english : voices;
-
   let best: SpeechSynthesisVoice | null = null;
   let bestScore = -Infinity;
   for (const v of pool) {
@@ -24,54 +54,104 @@ function pickBestVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | n
   return best ?? pool[0];
 }
 
-export function useSpeech() {
-  const supported =
-    typeof window !== "undefined" && "speechSynthesis" in window;
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+function speakWithWebSpeech(text: string, onEnd: () => void) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  const synth = window.speechSynthesis;
+  synth.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  const v = pickBestVoice(synth.getVoices());
+  if (v) {
+    u.voice = v;
+    u.lang = v.lang;
+  }
+  u.rate = 1.0;
+  u.pitch = 1.0;
+  u.onend = onEnd;
+  u.onerror = onEnd;
+  synth.speak(u);
+}
 
-  useEffect(() => {
-    if (!supported) return;
-    const synth = window.speechSynthesis;
-    const refresh = () => {
-      voiceRef.current = pickBestVoice(synth.getVoices());
-    };
-    refresh();
-    synth.addEventListener("voiceschanged", refresh);
-    return () => {
-      synth.removeEventListener("voiceschanged", refresh);
-      synth.cancel();
-      setIsSpeaking(false);
-    };
-  }, [supported]);
+// ---------- Hook ----------
+export function useSpeech() {
+  const supported = typeof window !== "undefined";
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const urlRef = useRef<string | null>(null);
+  const cancelledRef = useRef(false);
 
   const stop = useCallback(() => {
-    if (!supported) return;
-    window.speechSynthesis.cancel();
+    cancelledRef.current = true;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current = null;
+    }
+    if (urlRef.current) {
+      URL.revokeObjectURL(urlRef.current);
+      urlRef.current = null;
+    }
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
     setIsSpeaking(false);
-  }, [supported]);
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      cancelledRef.current = true;
+      if (audioRef.current) audioRef.current.pause();
+      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   const speak = useCallback(
-    (text: string) => {
+    async (text: string) => {
       if (!supported || !text) return;
-      const synth = window.speechSynthesis;
-      synth.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      if (voiceRef.current) {
-        u.voice = voiceRef.current;
-        u.lang = voiceRef.current.lang;
+      cancelledRef.current = false;
+      stop();
+      cancelledRef.current = false;
+
+      setIsLoading(true);
+      try {
+        const tts = await loadKokoro();
+        if (cancelledRef.current) return;
+
+        const audioResult = await tts.generate(text, { voice: "af_heart" });
+        if (cancelledRef.current) return;
+
+        const blob: Blob = audioResult.toBlob();
+        const url = URL.createObjectURL(blob);
+        urlRef.current = url;
+
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => {
+          setIsSpeaking(false);
+          if (urlRef.current === url) {
+            URL.revokeObjectURL(url);
+            urlRef.current = null;
+          }
+        };
+        audio.onerror = () => setIsSpeaking(false);
+
+        setIsLoading(false);
+        setIsSpeaking(true);
+        await audio.play();
+      } catch (err) {
+        console.warn("[useSpeech] Kokoro failed, falling back to Web Speech:", err);
+        setIsLoading(false);
+        if (cancelledRef.current) return;
+        setIsSpeaking(true);
+        speakWithWebSpeech(text, () => setIsSpeaking(false));
       }
-      u.rate = 1.0;
-      u.pitch = 1.0;
-      u.onstart = () => setIsSpeaking(true);
-      u.onend = () => setIsSpeaking(false);
-      u.onerror = () => setIsSpeaking(false);
-      utteranceRef.current = u;
-      synth.speak(u);
     },
-    [supported],
+    [supported, stop],
   );
 
-  return { supported, isSpeaking, speak, stop };
+  return { supported, isSpeaking, isLoading, speak, stop };
 }

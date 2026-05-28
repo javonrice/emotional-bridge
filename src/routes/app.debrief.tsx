@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Mic, Share2, Lock, Volume2, Square } from "lucide-react";
+import { Mic, Share2, Lock, Volume2, Square, Loader2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toPng } from "html-to-image";
@@ -291,19 +291,26 @@ function Debrief() {
               {speech.supported && (
                 <button
                   onClick={() => {
-                    if (speech.isSpeaking) {
+                    if (speech.isSpeaking || speech.isLoading) {
                       speech.stop();
                     } else {
                       void track("debrief.listen", { id: debrief.id });
-                      speech.speak(
+                      void speech.speak(
                         `Pattern. ${debrief.pattern}. Reframe. ${debrief.reframe}. Try next time. ${debrief.micro_action}.`,
                       );
                     }
                   }}
+                  disabled={false}
                   className="tap-scale flex flex-1 items-center justify-center gap-2 rounded-full bg-white/8 px-4 py-2.5 text-xs font-medium text-foreground"
                 >
-                  {speech.isSpeaking ? <Square size={14} /> : <Volume2 size={14} />}
-                  {speech.isSpeaking ? "Stop" : "Listen"}
+                  {speech.isLoading ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : speech.isSpeaking ? (
+                    <Square size={14} />
+                  ) : (
+                    <Volume2 size={14} />
+                  )}
+                  {speech.isLoading ? "Loading voice…" : speech.isSpeaking ? "Stop" : "Listen"}
                 </button>
               )}
               <button
