@@ -47,10 +47,12 @@ export const deleteAccount = createServerFn({ method: "POST" })
       "debriefs",
       "checkins",
       "loops",
+      "monthly_reports",
       "onboarding_answers",
       "ios_waitlist",
       "subscriptions",
       "user_roles",
+      "account_deletions",
       "profiles",
     ] as const;
     for (const t of tables) {
