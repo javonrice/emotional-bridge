@@ -24,6 +24,7 @@ const PLANS: Record<Plan, { label: string; price: string; per: string; tag?: str
 
 function Paywall() {
   const nav = useNavigate();
+  const router = useRouter();
   const { answers } = useOnboarding();
   const { source } = Route.useSearch();
   const { user } = useAuth();
