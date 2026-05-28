@@ -13,6 +13,7 @@ import { NotTherapyDisclaimer } from "@/components/safety/NotTherapyDisclaimer";
 import { detectRisk } from "@/lib/safety";
 import { track } from "@/lib/analytics.functions";
 import { useEntitlements } from "@/hooks/useEntitlements";
+import { useSpeech } from "@/hooks/useSpeech";
 
 export const Route = createFileRoute("/app/debrief")({
   component: Debrief,
