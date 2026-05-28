@@ -26,6 +26,9 @@ function Welcome() {
         <p className="px-6 text-center text-xs text-muted-foreground/70">
           No streaks. No shame. Just your pattern.
         </p>
+        <Link to="/login" className="tap-scale block text-center text-xs text-muted-foreground/90 underline-offset-2 hover:text-primary hover:underline">
+          Returning user? Sign in
+        </Link>
       </div>
     </div>
   );
