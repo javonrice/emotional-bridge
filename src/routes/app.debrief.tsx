@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Mic, Share2, Lock } from "lucide-react";
+import { Mic, Share2, Lock, Volume2, Square } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toPng } from "html-to-image";
