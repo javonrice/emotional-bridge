@@ -1,102 +1,41 @@
-## Goal
+# Fix: Listen button silent on mobile (past debriefs)
 
-Switch the debrief Listen button to **ElevenLabs** with three cost controls baked in from day one: server-side caching, per-user monthly quota, and a global daily ceiling.
+## Root cause
 
-## Setup needed from you
+iOS Safari and mobile Chrome block `HTMLAudioElement.play()` when it happens **after an `await`** that breaks the user-gesture chain. The current `useSpeech.speak()` does:
 
-Add your `ELEVENLABS_API_KEY` as a secret. I'll prompt for it after you approve. Get it from elevenlabs.io → Profile → API Keys.
-
-## Architecture
-
-```text
-Listen click
-  → server fn synthesizeDebrief({ debriefId })
-      → check global daily cap (kill switch)
-      → check user monthly quota
-      → check tts_cache for sha256(voice+model+text) hit
-          ├─ HIT  → return cached MP3 URL (free)
-          └─ MISS → call ElevenLabs → store MP3 → record usage → return URL
-  → browser plays MP3 from data URI or signed URL
+```
+click → setIsLoading → await synthesizeDebrief() → new Audio(url) → audio.play()
 ```
 
-## Database changes (one migration)
+Because `new Audio()` and `.play()` only happen *after* the server roundtrip resolves, the browser no longer considers it a user-initiated playback and silently rejects it (no error thrown, promise just rejects quietly or play() is a no-op). Desktop browsers are lenient, which is why it may appear to work there.
 
-1. **`tts_cache`** — cached audio keyed by content hash.
-   - `content_hash` (PK, text) — `sha256(voiceId + model + text)`
-   - `audio_path` (text) — Storage path for the MP3
-   - `chars` (int), `created_at`, `last_used_at`, `hit_count`
-   - RLS: `authenticated` can read; service role writes (only the server fn touches it).
+Past vs new debriefs feel different only because of timing variance — the bug affects both, but is reliably silent on mobile.
 
-2. **`tts_usage`** — per-user monthly char counter.
-   - `user_id`, `month` (date, first of month), `chars_used` (int)
-   - PK: `(user_id, month)`
-   - RLS: users read own; service role writes.
+## Fix
 
-3. **`tts_global_usage`** — app-wide daily counter for the kill switch.
-   - `day` (date, PK), `chars_used` (int)
-   - RLS: admin reads; service role writes.
+Create the `Audio` element **synchronously inside the click handler**, before any `await`. Then update `audio.src` and call `audio.play()` once the server returns. Safari honors this pattern because the element was instantiated within the gesture.
 
-4. **Storage bucket** `tts-cache` (private). Signed URLs (1h) returned to the client.
+### Changes
 
-## Server function `src/lib/tts.functions.ts`
+**`src/hooks/useSpeech.ts`** — refactor `speak(debriefId)`:
+- Create `const audio = new Audio()` synchronously at the top of `speak`, store it in `audioRef` immediately.
+- Call `audio.load()` (no-op but keeps the element "primed" in gesture).
+- Then `await synthesizeDebrief(...)`.
+- On success: set `audio.src = url`, attach `onended`/`onerror`, then `await audio.play()`.
+- On `play()` rejection: surface a new `SpeakError("playback_blocked")` so the UI can hint the user to tap again.
+- Keep `urlCache` so the second tap is instant (and synchronous play is then trivially within gesture).
 
-`synthesizeDebrief({ debriefId })`, auth-protected (`requireSupabaseAuth`):
+**`src/routes/app.debrief.tsx`** — handle the new `playback_blocked` error type with a short toast like "Tap Listen again to play." (rare fallback; the gesture-safe path should already work).
 
-1. Load the debrief row, verify it belongs to the user, build the text (`Pattern… Reframe… Try next time…`).
-2. Compute `content_hash = sha256(voiceId + model + text)`.
-3. Cache hit? Bump `hit_count` + `last_used_at`, return signed URL. Done.
-4. Cache miss → run the checks:
-   - **Per-request cap**: text length ≤ 800 chars. Reject if longer.
-   - **Global daily cap**: `tts_global_usage.chars_used + len > 200_000` (configurable via `TTS_DAILY_CHAR_CAP` env) → return `{ error: "tts_unavailable" }`.
-   - **User monthly quota**:
-     - Free tier: 5,000 chars/mo (~12 listens)
-     - Paid tier: 50,000 chars/mo (~125 listens)
-     - Over quota → return `{ error: "quota_exceeded", upgrade: true }`.
-5. Call ElevenLabs (Sarah voice `EXAVITQu4vr4xnSDxMaL`, model `eleven_turbo_v2_5`, format `mp3_22050_32`).
-6. Upload MP3 to `tts-cache/{hash}.mp3` via `supabaseAdmin`.
-7. Insert into `tts_cache`, increment `tts_usage` and `tts_global_usage` (upsert).
-8. Return `{ audioUrl: signedUrl, cached: false, remainingChars }`.
+## Out of scope
 
-Read entitlements via the same path `useEntitlements` uses on the server (or inline `has_active_subscription`).
+- No server changes. The server function, caching, quota, and bucket plumbing are working.
+- No fallback to `speechSynthesis` — ElevenLabs is the chosen voice.
 
-## Hook `src/hooks/useSpeech.ts` (rewrite)
+## Verification
 
-- Same public shape: `supported`, `isSpeaking`, `isLoading`, `speak(debriefId)`, `stop()`.
-- **Change**: `speak` takes a `debriefId` (not raw text) so the server controls the exact characters billed.
-- Calls the server fn, plays returned signed URL via `<audio>`.
-- Surfaces clean toast messages for `quota_exceeded` ("You've used your monthly listens — upgrade for more") and `tts_unavailable` ("Voice playback is paused for the day").
-- In-memory `Map<debriefId, signedUrl>` so re-clicking in the same session skips even the server roundtrip.
-
-## Debrief screen `src/routes/app.debrief.tsx`
-
-- `speech.speak(debrief.id)` instead of raw text.
-- Show a tiny "X listens left this month" caption under the button for free users when remaining ≤ 3 (mirrors the existing debrief-remaining UX).
-- Toast for quota/unavailable errors.
-
-## Cleanup
-
-- Remove `kokoro-js` dependency.
-
-## Configurable limits (env vars, all optional with sane defaults)
-
-- `TTS_FREE_MONTHLY_CHARS` (default 5000)
-- `TTS_PAID_MONTHLY_CHARS` (default 50000)
-- `TTS_DAILY_CHAR_CAP` (default 200000)
-- `TTS_MAX_CHARS_PER_REQUEST` (default 800)
-
-## Files
-
-- New migration: `tts_cache`, `tts_usage`, `tts_global_usage`, storage bucket, RLS, GRANTs.
-- `src/lib/tts.functions.ts` (new) — server function.
-- `src/lib/tts.server.ts` (new) — ElevenLabs client + cache helpers.
-- `src/hooks/useSpeech.ts` — rewrite.
-- `src/routes/app.debrief.tsx` — pass `debrief.id`, add quota messaging.
-- `package.json` — remove `kokoro-js`.
-
-## Cost math at scale
-
-With caching + quotas, **steady-state cost ≈ paid users × ~$0.05/mo** in the worst case (every paid user maxes their 50k chars on uncached content). Free tier is bounded by the user quota × free user count, and the global cap is the seat belt: even worst-case spike costs ≤ **$3/day** at the default 200k cap.
-
-## Note on rate limiting
-
-The platform doesn't have proper rate-limiting primitives yet, so the per-user quota and global cap are implemented as ad-hoc counter rows in Postgres. This is fine for cost control but isn't a defense against a determined attacker — they'd be limited by the global cap, which is the real seat belt.
+After the edit, test on the mobile preview:
+1. Open a past debrief from history → tap Listen → audio plays.
+2. Tap again → cache hit, plays instantly.
+3. Generate a new debrief → tap Listen → audio plays.

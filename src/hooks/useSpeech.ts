@@ -10,6 +10,7 @@ export type SpeakError =
   | "too_long"
   | "tts_unavailable"
   | "quota_exceeded"
+  | "playback_blocked"
   | "failed";
 
 export function useSpeech() {
@@ -43,8 +44,24 @@ export function useSpeech() {
       debriefId: string,
     ): Promise<{ ok: true } | { ok: false; error: SpeakError }> => {
       if (!supported || !debriefId) return { ok: false, error: "failed" };
-      cancelledRef.current = false;
-      stop();
+
+      // CRITICAL (iOS Safari / mobile Chrome): the Audio element must be
+      // instantiated synchronously inside the user gesture, BEFORE any
+      // await. Otherwise audio.play() is silently blocked once the awaited
+      // server roundtrip resolves and the gesture chain is broken.
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+        } catch {
+          /* noop */
+        }
+        audioRef.current = null;
+      }
+      const audio = new Audio();
+      audio.preload = "auto";
+      audioRef.current = audio;
+      audio.onended = () => setIsSpeaking(false);
+
       cancelledRef.current = false;
       setIsLoading(true);
 
@@ -65,17 +82,25 @@ export function useSpeech() {
           urlCache.set(debriefId, url);
         }
 
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.onended = () => setIsSpeaking(false);
+        if (cancelledRef.current || audioRef.current !== audio) {
+          return { ok: true };
+        }
+
         audio.onerror = () => {
           setIsSpeaking(false);
           urlCache.delete(debriefId); // signed URL may have expired
         };
+        audio.src = url;
 
         setIsLoading(false);
         setIsSpeaking(true);
-        await audio.play();
+        try {
+          await audio.play();
+        } catch (playErr) {
+          console.warn("[useSpeech] play() blocked:", playErr);
+          setIsSpeaking(false);
+          return { ok: false, error: "playback_blocked" };
+        }
         return { ok: true };
       } catch (err) {
         console.warn("[useSpeech] failed:", err);
@@ -84,7 +109,7 @@ export function useSpeech() {
         return { ok: false, error: "failed" };
       }
     },
-    [supported, stop, synth],
+    [supported, synth],
   );
 
   return { supported, isSpeaking, isLoading, speak, stop };
