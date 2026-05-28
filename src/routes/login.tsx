@@ -51,7 +51,12 @@ function Login() {
         try {
           const done = localStorage.getItem("loop.onboarded.v1") === "1";
           const lastStep = localStorage.getItem("loop.onboarding.lastStep.v1");
-          if (!done && lastStep && lastStep.startsWith("/onboarding/")) {
+          if (
+            !done &&
+            lastStep &&
+            lastStep.startsWith("/onboarding/") &&
+            lastStep !== "/onboarding/welcome"
+          ) {
             dest = lastStep;
           }
         } catch {}
