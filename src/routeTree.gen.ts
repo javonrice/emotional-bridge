@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PaywallRouteImport } from './routes/paywall'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as CrisisRouteImport } from './routes/crisis'
@@ -56,6 +57,11 @@ const PaywallRoute = PaywallRouteImport.update({
   path: '/paywall',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -82,94 +88,94 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingWelcomeRoute = OnboardingWelcomeRouteImport.update({
-  id: '/onboarding/welcome',
-  path: '/onboarding/welcome',
-  getParentRoute: () => rootRouteImport,
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingTrackingModeRoute = OnboardingTrackingModeRouteImport.update({
-  id: '/onboarding/tracking-mode',
-  path: '/onboarding/tracking-mode',
-  getParentRoute: () => rootRouteImport,
+  id: '/tracking-mode',
+  path: '/tracking-mode',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingTimingRoute = OnboardingTimingRouteImport.update({
-  id: '/onboarding/timing',
-  path: '/onboarding/timing',
-  getParentRoute: () => rootRouteImport,
+  id: '/timing',
+  path: '/timing',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingStoryRoute = OnboardingStoryRouteImport.update({
-  id: '/onboarding/story',
-  path: '/onboarding/story',
-  getParentRoute: () => rootRouteImport,
+  id: '/story',
+  path: '/story',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingScienceRoute = OnboardingScienceRouteImport.update({
-  id: '/onboarding/science',
-  path: '/onboarding/science',
-  getParentRoute: () => rootRouteImport,
+  id: '/science',
+  path: '/science',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingRevealMirrorRoute = OnboardingRevealMirrorRouteImport.update({
-  id: '/onboarding/reveal-mirror',
-  path: '/onboarding/reveal-mirror',
-  getParentRoute: () => rootRouteImport,
+  id: '/reveal-mirror',
+  path: '/reveal-mirror',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingRevealHoursRoute = OnboardingRevealHoursRouteImport.update({
-  id: '/onboarding/reveal-hours',
-  path: '/onboarding/reveal-hours',
-  getParentRoute: () => rootRouteImport,
+  id: '/reveal-hours',
+  path: '/reveal-hours',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingProofRoute = OnboardingProofRouteImport.update({
-  id: '/onboarding/proof',
-  path: '/onboarding/proof',
-  getParentRoute: () => rootRouteImport,
+  id: '/proof',
+  path: '/proof',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingPlanRoute = OnboardingPlanRouteImport.update({
-  id: '/onboarding/plan',
-  path: '/onboarding/plan',
-  getParentRoute: () => rootRouteImport,
+  id: '/plan',
+  path: '/plan',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingOpenerRoute = OnboardingOpenerRouteImport.update({
-  id: '/onboarding/opener',
-  path: '/onboarding/opener',
-  getParentRoute: () => rootRouteImport,
+  id: '/opener',
+  path: '/opener',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingLoopRoute = OnboardingLoopRouteImport.update({
-  id: '/onboarding/loop',
-  path: '/onboarding/loop',
-  getParentRoute: () => rootRouteImport,
+  id: '/loop',
+  path: '/loop',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingFeelingRoute = OnboardingFeelingRouteImport.update({
-  id: '/onboarding/feeling',
-  path: '/onboarding/feeling',
-  getParentRoute: () => rootRouteImport,
+  id: '/feeling',
+  path: '/feeling',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingDurationRoute = OnboardingDurationRouteImport.update({
-  id: '/onboarding/duration',
-  path: '/onboarding/duration',
-  getParentRoute: () => rootRouteImport,
+  id: '/duration',
+  path: '/duration',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingControlRoute = OnboardingControlRouteImport.update({
-  id: '/onboarding/control',
-  path: '/onboarding/control',
-  getParentRoute: () => rootRouteImport,
+  id: '/control',
+  path: '/control',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingCommitRoute = OnboardingCommitRouteImport.update({
-  id: '/onboarding/commit',
-  path: '/onboarding/commit',
-  getParentRoute: () => rootRouteImport,
+  id: '/commit',
+  path: '/commit',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingAppsRoute = OnboardingAppsRouteImport.update({
-  id: '/onboarding/apps',
-  path: '/onboarding/apps',
-  getParentRoute: () => rootRouteImport,
+  id: '/apps',
+  path: '/apps',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingAnalyzingRoute = OnboardingAnalyzingRouteImport.update({
-  id: '/onboarding/analyzing',
-  path: '/onboarding/analyzing',
-  getParentRoute: () => rootRouteImport,
+  id: '/analyzing',
+  path: '/analyzing',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingAgeRoute = OnboardingAgeRouteImport.update({
-  id: '/onboarding/age',
-  path: '/onboarding/age',
-  getParentRoute: () => rootRouteImport,
+  id: '/age',
+  path: '/age',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const LegalTermsRoute = LegalTermsRouteImport.update({
   id: '/legal/terms',
@@ -234,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/crisis': typeof CrisisRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/paywall': typeof PaywallRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/ai-quality': typeof AdminAiQualityRoute
@@ -272,6 +279,7 @@ export interface FileRoutesByTo {
   '/crisis': typeof CrisisRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/paywall': typeof PaywallRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/ai-quality': typeof AdminAiQualityRoute
@@ -311,6 +319,7 @@ export interface FileRoutesById {
   '/crisis': typeof CrisisRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/paywall': typeof PaywallRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/ai-quality': typeof AdminAiQualityRoute
@@ -351,6 +360,7 @@ export interface FileRouteTypes {
     | '/crisis'
     | '/forgot-password'
     | '/login'
+    | '/onboarding'
     | '/paywall'
     | '/reset-password'
     | '/admin/ai-quality'
@@ -389,6 +399,7 @@ export interface FileRouteTypes {
     | '/crisis'
     | '/forgot-password'
     | '/login'
+    | '/onboarding'
     | '/paywall'
     | '/reset-password'
     | '/admin/ai-quality'
@@ -427,6 +438,7 @@ export interface FileRouteTypes {
     | '/crisis'
     | '/forgot-password'
     | '/login'
+    | '/onboarding'
     | '/paywall'
     | '/reset-password'
     | '/admin/ai-quality'
@@ -466,6 +478,7 @@ export interface RootRouteChildren {
   CrisisRoute: typeof CrisisRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
+  OnboardingRoute: typeof OnboardingRouteWithChildren
   PaywallRoute: typeof PaywallRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   AdminAiQualityRoute: typeof AdminAiQualityRoute
@@ -473,24 +486,6 @@ export interface RootRouteChildren {
   LegalEulaRoute: typeof LegalEulaRoute
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalTermsRoute: typeof LegalTermsRoute
-  OnboardingAgeRoute: typeof OnboardingAgeRoute
-  OnboardingAnalyzingRoute: typeof OnboardingAnalyzingRoute
-  OnboardingAppsRoute: typeof OnboardingAppsRoute
-  OnboardingCommitRoute: typeof OnboardingCommitRoute
-  OnboardingControlRoute: typeof OnboardingControlRoute
-  OnboardingDurationRoute: typeof OnboardingDurationRoute
-  OnboardingFeelingRoute: typeof OnboardingFeelingRoute
-  OnboardingLoopRoute: typeof OnboardingLoopRoute
-  OnboardingOpenerRoute: typeof OnboardingOpenerRoute
-  OnboardingPlanRoute: typeof OnboardingPlanRoute
-  OnboardingProofRoute: typeof OnboardingProofRoute
-  OnboardingRevealHoursRoute: typeof OnboardingRevealHoursRoute
-  OnboardingRevealMirrorRoute: typeof OnboardingRevealMirrorRoute
-  OnboardingScienceRoute: typeof OnboardingScienceRoute
-  OnboardingStoryRoute: typeof OnboardingStoryRoute
-  OnboardingTimingRoute: typeof OnboardingTimingRoute
-  OnboardingTrackingModeRoute: typeof OnboardingTrackingModeRoute
-  OnboardingWelcomeRoute: typeof OnboardingWelcomeRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
@@ -508,6 +503,13 @@ declare module '@tanstack/react-router' {
       path: '/paywall'
       fullPath: '/paywall'
       preLoaderRoute: typeof PaywallRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -547,129 +549,129 @@ declare module '@tanstack/react-router' {
     }
     '/onboarding/welcome': {
       id: '/onboarding/welcome'
-      path: '/onboarding/welcome'
+      path: '/welcome'
       fullPath: '/onboarding/welcome'
       preLoaderRoute: typeof OnboardingWelcomeRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/tracking-mode': {
       id: '/onboarding/tracking-mode'
-      path: '/onboarding/tracking-mode'
+      path: '/tracking-mode'
       fullPath: '/onboarding/tracking-mode'
       preLoaderRoute: typeof OnboardingTrackingModeRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/timing': {
       id: '/onboarding/timing'
-      path: '/onboarding/timing'
+      path: '/timing'
       fullPath: '/onboarding/timing'
       preLoaderRoute: typeof OnboardingTimingRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/story': {
       id: '/onboarding/story'
-      path: '/onboarding/story'
+      path: '/story'
       fullPath: '/onboarding/story'
       preLoaderRoute: typeof OnboardingStoryRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/science': {
       id: '/onboarding/science'
-      path: '/onboarding/science'
+      path: '/science'
       fullPath: '/onboarding/science'
       preLoaderRoute: typeof OnboardingScienceRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/reveal-mirror': {
       id: '/onboarding/reveal-mirror'
-      path: '/onboarding/reveal-mirror'
+      path: '/reveal-mirror'
       fullPath: '/onboarding/reveal-mirror'
       preLoaderRoute: typeof OnboardingRevealMirrorRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/reveal-hours': {
       id: '/onboarding/reveal-hours'
-      path: '/onboarding/reveal-hours'
+      path: '/reveal-hours'
       fullPath: '/onboarding/reveal-hours'
       preLoaderRoute: typeof OnboardingRevealHoursRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/proof': {
       id: '/onboarding/proof'
-      path: '/onboarding/proof'
+      path: '/proof'
       fullPath: '/onboarding/proof'
       preLoaderRoute: typeof OnboardingProofRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/plan': {
       id: '/onboarding/plan'
-      path: '/onboarding/plan'
+      path: '/plan'
       fullPath: '/onboarding/plan'
       preLoaderRoute: typeof OnboardingPlanRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/opener': {
       id: '/onboarding/opener'
-      path: '/onboarding/opener'
+      path: '/opener'
       fullPath: '/onboarding/opener'
       preLoaderRoute: typeof OnboardingOpenerRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/loop': {
       id: '/onboarding/loop'
-      path: '/onboarding/loop'
+      path: '/loop'
       fullPath: '/onboarding/loop'
       preLoaderRoute: typeof OnboardingLoopRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/feeling': {
       id: '/onboarding/feeling'
-      path: '/onboarding/feeling'
+      path: '/feeling'
       fullPath: '/onboarding/feeling'
       preLoaderRoute: typeof OnboardingFeelingRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/duration': {
       id: '/onboarding/duration'
-      path: '/onboarding/duration'
+      path: '/duration'
       fullPath: '/onboarding/duration'
       preLoaderRoute: typeof OnboardingDurationRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/control': {
       id: '/onboarding/control'
-      path: '/onboarding/control'
+      path: '/control'
       fullPath: '/onboarding/control'
       preLoaderRoute: typeof OnboardingControlRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/commit': {
       id: '/onboarding/commit'
-      path: '/onboarding/commit'
+      path: '/commit'
       fullPath: '/onboarding/commit'
       preLoaderRoute: typeof OnboardingCommitRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/apps': {
       id: '/onboarding/apps'
-      path: '/onboarding/apps'
+      path: '/apps'
       fullPath: '/onboarding/apps'
       preLoaderRoute: typeof OnboardingAppsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/analyzing': {
       id: '/onboarding/analyzing'
-      path: '/onboarding/analyzing'
+      path: '/analyzing'
       fullPath: '/onboarding/analyzing'
       preLoaderRoute: typeof OnboardingAnalyzingRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/onboarding/age': {
       id: '/onboarding/age'
-      path: '/onboarding/age'
+      path: '/age'
       fullPath: '/onboarding/age'
       preLoaderRoute: typeof OnboardingAgeRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/legal/terms': {
       id: '/legal/terms'
@@ -769,19 +771,28 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
-const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AppRoute: AppRouteWithChildren,
-  CrisisRoute: CrisisRoute,
-  ForgotPasswordRoute: ForgotPasswordRoute,
-  LoginRoute: LoginRoute,
-  PaywallRoute: PaywallRoute,
-  ResetPasswordRoute: ResetPasswordRoute,
-  AdminAiQualityRoute: AdminAiQualityRoute,
-  CheckoutReturnRoute: CheckoutReturnRoute,
-  LegalEulaRoute: LegalEulaRoute,
-  LegalPrivacyRoute: LegalPrivacyRoute,
-  LegalTermsRoute: LegalTermsRoute,
+interface OnboardingRouteChildren {
+  OnboardingAgeRoute: typeof OnboardingAgeRoute
+  OnboardingAnalyzingRoute: typeof OnboardingAnalyzingRoute
+  OnboardingAppsRoute: typeof OnboardingAppsRoute
+  OnboardingCommitRoute: typeof OnboardingCommitRoute
+  OnboardingControlRoute: typeof OnboardingControlRoute
+  OnboardingDurationRoute: typeof OnboardingDurationRoute
+  OnboardingFeelingRoute: typeof OnboardingFeelingRoute
+  OnboardingLoopRoute: typeof OnboardingLoopRoute
+  OnboardingOpenerRoute: typeof OnboardingOpenerRoute
+  OnboardingPlanRoute: typeof OnboardingPlanRoute
+  OnboardingProofRoute: typeof OnboardingProofRoute
+  OnboardingRevealHoursRoute: typeof OnboardingRevealHoursRoute
+  OnboardingRevealMirrorRoute: typeof OnboardingRevealMirrorRoute
+  OnboardingScienceRoute: typeof OnboardingScienceRoute
+  OnboardingStoryRoute: typeof OnboardingStoryRoute
+  OnboardingTimingRoute: typeof OnboardingTimingRoute
+  OnboardingTrackingModeRoute: typeof OnboardingTrackingModeRoute
+  OnboardingWelcomeRoute: typeof OnboardingWelcomeRoute
+}
+
+const OnboardingRouteChildren: OnboardingRouteChildren = {
   OnboardingAgeRoute: OnboardingAgeRoute,
   OnboardingAnalyzingRoute: OnboardingAnalyzingRoute,
   OnboardingAppsRoute: OnboardingAppsRoute,
@@ -800,6 +811,26 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingTimingRoute: OnboardingTimingRoute,
   OnboardingTrackingModeRoute: OnboardingTrackingModeRoute,
   OnboardingWelcomeRoute: OnboardingWelcomeRoute,
+}
+
+const OnboardingRouteWithChildren = OnboardingRoute._addFileChildren(
+  OnboardingRouteChildren,
+)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  CrisisRoute: CrisisRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
+  LoginRoute: LoginRoute,
+  OnboardingRoute: OnboardingRouteWithChildren,
+  PaywallRoute: PaywallRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  AdminAiQualityRoute: AdminAiQualityRoute,
+  CheckoutReturnRoute: CheckoutReturnRoute,
+  LegalEulaRoute: LegalEulaRoute,
+  LegalPrivacyRoute: LegalPrivacyRoute,
+  LegalTermsRoute: LegalTermsRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport

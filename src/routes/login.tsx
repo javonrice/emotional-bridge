@@ -46,7 +46,16 @@ function Login() {
             } });
           }
         } catch {}
-        nav({ to: search.redirect, replace: true });
+        // Resume incomplete onboarding if user has a last step but never completed.
+        let dest = search.redirect;
+        try {
+          const done = localStorage.getItem("loop.onboarded.v1") === "1";
+          const lastStep = localStorage.getItem("loop.onboarding.lastStep.v1");
+          if (!done && lastStep && lastStep.startsWith("/onboarding/")) {
+            dest = lastStep;
+          }
+        } catch {}
+        nav({ to: dest, replace: true });
       })();
     }
   }, [isAuthenticated, loading]);
