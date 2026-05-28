@@ -62,7 +62,7 @@ function Paywall() {
   return (
     <div className="relative flex min-h-screen flex-col gradient-hero safe-top">
       <div className="flex h-12 items-center justify-end px-4">
-        <button onClick={() => setShowSheet(true)} aria-label="Close" className="tap-scale flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-muted-foreground">
+        <button onClick={skip} aria-label="Close" className="tap-scale flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-muted-foreground">
           <X size={18} />
         </button>
       </div>
@@ -141,13 +141,13 @@ function Paywall() {
         >
           {plan === "annual" ? "Start 7-day free trial" : plan === "lifetime" ? "Get lifetime access" : "Start membership"}
         </button>
-        <button onClick={() => setShowSheet(true)} className="mt-2 block w-full text-center text-xs text-muted-foreground/70">
-          Not now
+        <button onClick={skip} className="mt-2 block w-full text-center text-xs text-muted-foreground/70">
+          Not now — continue with limited access
         </button>
       </div>
 
       <AnimatePresence>
-        {showSheet && <Objection onClose={() => setShowSheet(false)} onSkip={start} />}
+        {showSheet && <Objection onClose={() => setShowSheet(false)} onSkip={skip} />}
       </AnimatePresence>
 
       <AnimatePresence>
