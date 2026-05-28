@@ -156,6 +156,12 @@ function Login() {
         {mode === "signup" ? "Already have an account? Sign in" : "New here? Create account"}
       </button>
 
+      {mode === "signin" && (
+        <Link to="/forgot-password" className="mt-2 text-center text-xs text-muted-foreground hover:text-foreground">
+          Forgot password?
+        </Link>
+      )}
+
       <p className="mt-4 text-center text-[11px] text-muted-foreground/60">
         <Link to="/">Back</Link>
       </p>
