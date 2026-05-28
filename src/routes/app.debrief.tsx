@@ -290,14 +290,23 @@ function Debrief() {
             <div className="mt-4 flex gap-2">
               {speech.supported && (
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (speech.isSpeaking || speech.isLoading) {
                       speech.stop();
-                    } else {
-                      void track("debrief.listen", { id: debrief.id });
-                      void speech.speak(
-                        `Pattern. ${debrief.pattern}. Reframe. ${debrief.reframe}. Try next time. ${debrief.micro_action}.`,
-                      );
+                      return;
+                    }
+                    void track("debrief.listen", { id: debrief.id });
+                    const result = await speech.speak(debrief.id);
+                    if (!result.ok) {
+                      if (result.error === "quota_exceeded") {
+                        setError("You've used your voice playback for the month. Upgrade for more.");
+                      } else if (result.error === "tts_unavailable") {
+                        setError("Voice playback is paused for the day. Try again tomorrow.");
+                      } else if (result.error === "too_long") {
+                        setError("This debrief is too long for voice playback.");
+                      } else {
+                        setError("Voice playback failed. Try again.");
+                      }
                     }
                   }}
                   disabled={false}
