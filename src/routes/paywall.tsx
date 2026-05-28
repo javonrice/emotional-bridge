@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Check, Lock, Sparkles, X } from "lucide-react";
@@ -24,6 +24,7 @@ const PLANS: Record<Plan, { label: string; price: string; per: string; tag?: str
 
 function Paywall() {
   const nav = useNavigate();
+  const router = useRouter();
   const { answers } = useOnboarding();
   const { source } = Route.useSearch();
   const { user } = useAuth();
@@ -56,7 +57,11 @@ function Paywall() {
 
   const skip = () => {
     completeOnboarding();
-    nav({ to: "/app/today" });
+    if (source === "onboarding" || typeof window === "undefined" || window.history.length <= 1) {
+      nav({ to: "/app/today" });
+      return;
+    }
+    router.history.back();
   };
 
   return (
