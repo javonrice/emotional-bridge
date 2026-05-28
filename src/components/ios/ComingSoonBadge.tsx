@@ -44,7 +44,8 @@ export function IosWaitlistSheet({ open, onClose, source }: { open: boolean; onC
       .from("ios_waitlist")
       .insert({ email: email.trim().toLowerCase(), source, user_id: userRes.user?.id ?? null });
     setSubmitting(false);
-    if (insertErr) {
+    // 23505 = unique violation. Treat duplicate email as success (silent dedup).
+    if (insertErr && !/duplicate key|23505|already exists/i.test(insertErr.message)) {
       setError(insertErr.message);
       return;
     }
